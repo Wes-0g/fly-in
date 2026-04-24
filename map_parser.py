@@ -1,5 +1,13 @@
 from pydantic import BaseModel, Field, model_validator, ValidationError
+from enum import Enum
 import sys
+
+
+class Zone(Enum):
+    RESTRICTED = "restricted"
+    NORMAL = "normal"
+    PRIORITY = "priority"
+    BLOCKED = "blocked"
 
 
 class Parser:
@@ -16,8 +24,7 @@ class Parser:
                     striped_line: str = line.strip()
                     if not striped_line or striped_line.startswith('#'):
                         continue
-                    if striped_line != "nb_drones":
-                        raise ValueError("First line must be nb_drones")
+
                     if striped_line.count(':') != 1:
                         raise ValueError(f"Expected <name> <x> <y> "
                                          f"[metadata] got {striped_line}")
@@ -25,14 +32,13 @@ class Parser:
                     key: str = striped_line.split(':')[0].strip()
                     value: str = striped_line.split(':')[1].strip()
 
+
                     if key == "nb_drones":
                         try:
                             data[key] = int(value)
                         except ValueError:
                             raise ValueError("nb_drones must be a positive integer")
 
-                    if key == "nb_drones" and key in data.keys():
-                        raise ValueError("nb_drones already exists")
 
                     if key == "start_hub":
                         name: str = value.split(' ')[0].strip()
@@ -47,17 +53,21 @@ class Parser:
                         metadata: str = value.split(' ', 3)[3].strip()
                         if not metadata.startswith('[') or not metadata.endswith(']'):
                             raise ValueError("metadata must be in the format [metadata]")
-
+                        metadata_dict: dict = {}
                         if metadata.startswith('[') and metadata.endswith(']'):
-                            metadata.removesuffix(']')
-                            metadata.removesuffix('[')
-                            metadata: str = metadata.strip()
+                            metadata: str = metadata.removesuffix(']').removeprefix('[')
+                            metadata_list: list[str] = metadata.split(' ')
+                            #for metadata_item in metadata_list:
+                            # metadata_dict[metadata.split('=')[0]] = metadata.split('=')[1]
+
+                            print(metadata)
                             
 
-                        data[key] = (name, x, y)
+                        data[key] = (name, x, y, metadata_dict)
+                return data
 
         except ValueError as e:
-            pass
+            print(e)
 
 def main() -> None:
 
@@ -67,6 +77,7 @@ def main() -> None:
     else:
         parser: Parser = Parser(sys.argv[1])
         data: dict = parser.parse()
+        print(data)
 
 
 
