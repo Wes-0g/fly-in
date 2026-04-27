@@ -73,8 +73,11 @@ class Parser:
 
     def __init__(self, map: str) -> None:
         self.map: str = map
+        self.zones: list[Zone] = []
+        self.connections: list[Connection] = []
+        self.nb_drones: int = 0
 
-    def filter_lines(self) -> list[str] | None:
+    def filter_lines(self) -> list[str]:
 
         try:
             with open(self.map, 'r') as file:
@@ -86,10 +89,14 @@ class Parser:
                     if line and not line.startswith('#')
                 ]
 
+                if not lines:
+                    raise ValueError("No valid lines found in map file")
+
                 if not lines[0].startswith('nb_drones:'):
                     raise ValueError(f"First line must contain "
                                      f"nb_drones\ngot: {lines[0]}")
 
+                nb_drones_count: int = 0
                 start_hub_count: int = 0
                 end_hub_count: int = 0
 
@@ -98,21 +105,52 @@ class Parser:
                         start_hub_count += 1
                     elif line.startswith('end_hub:'):
                         end_hub_count += 1
+                    elif line.startswith('nb_drones:'):
+                        nb_drones_count += 1
+                    print(line)
 
-                if start_hub_count > 1:
-                    raise ValueError(f"Only one start_hub is allowed"
-                                     f"\ngot: {start_hub_count}")
-                if end_hub_count > 1:
-                    raise ValueError(f"Only one end_hub is allowed"
-                                     f"\ngot: {end_hub_count}")
+                    if nb_drones_count > 1:
+                        raise ValueError(f"Only one nb_drones is allowed"
+                                         f"\ngot: {nb_drones_count}")
+
+                    if start_hub_count > 1:
+                        raise ValueError(f"Only one start_hub is allowed"
+                                         f"\ngot: {start_hub_count}")
+                    if end_hub_count > 1:
+                        raise ValueError(f"Only one end_hub is allowed"
+                                         f"\ngot: {end_hub_count}")
 
                 return lines
 
         except ValueError as e:
             print(f"ERROR: {e}")
+            sys.exit(1)
 
-    def parse(self) -> dict:
+    def nb_drones_parser(self, line: str) -> int: # add type hints later
         pass
+
+    def zone_parser(self, line: str) -> Zone: # add type hints later
+        pass
+
+    def connection_parser(self, line: str) -> Connection: # add type hints later
+        pass
+
+    def parse(self): # add type hints later
+        lines: list[str] = self.filter_lines()
+
+        self.nb_drones: int = self.nb_drones_parser(lines[0])
+
+        for line in lines:
+            if line.startswith('start_hub:'):
+                self.zones.append(self.zone_parser(line))
+            elif line.startswith('end_hub:'):
+                self.zones.append(self.zone_parser(line))
+            elif line.startswith('hub:'):
+                self.zones.append(self.zone_parser(line))
+            elif line.startswith('connection:'):
+                self.connections.append(self.connection_parser(line))
+            else:
+                raise ValueError(f"Invalid line: {line}")
 
 
 def main() -> None:
