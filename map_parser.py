@@ -4,7 +4,7 @@ from pydantic import (BaseModel, Field,
                       field_validator)
 from enum import Enum
 from typing import Optional
-import sys
+from sys import argv, exit
 
 
 class ZoneType(Enum):
@@ -107,7 +107,6 @@ class Parser:
                         end_hub_count += 1
                     elif line.startswith('nb_drones:'):
                         nb_drones_count += 1
-                    print(line)
 
                     if nb_drones_count > 1:
                         raise ValueError(f"Only one nb_drones is allowed"
@@ -124,27 +123,95 @@ class Parser:
 
         except ValueError as e:
             print(f"ERROR: {e}")
-            sys.exit(1)
+            exit(1)
 
-    def nb_drones_parser(self, line: str) -> int: # add type hints later
-        pass
+    @staticmethod
+    def nb_drones_parser(line: str) -> int:
 
-    def zone_parser(self, line: str) -> Zone: # add type hints later
-        pass
+        data: list[str] = line.split()
+        if len(data) != 2:
+            raise ValueError(f"Invalid nb_drones line format.\n"
+                             f"Expected: 'nb_drones: <positive_integer>'\n"
+                             f"Got: '{line}'")
+        else:
+            try:
+                nb_drones: int = int(data[1])
+            except ValueError:
+                raise ValueError(f"Invalid nb_drones value.\n"
+                                 f"Expected a positive integer, got: '{data[1]}'")
 
-    def connection_parser(self, line: str) -> Connection: # add type hints later
-        pass
+        return nb_drones
 
-    def parse(self): # add type hints later
+    @staticmethod
+    def zone_parser(line: str) -> Zone:
+
+        if '[' in line:
+            base, metadata = line.split('[')
+            metadata = metadata.rstrip(']')
+        else:
+            base = line
+            metadata = None
+
+        try:
+            _, name, x, y = base.strip().split(' ')
+        except ValueError:
+            raise ValueError(f"Error parsing line: '{line}'"
+                             f"\nexpected: 'name x y [metadata]'")
+
+        meta_dict: dict[str, str] = {}
+        if metadata:
+            for item in metadata.split():
+                if item.count('=') != 1:
+                    raise ValueError(f"Invalid metadata format: '{item}'")
+                key, value = item.split('=')
+                meta_dict[key] = value
+
+        try:
+            return Zone(name=name, x=x, y=y, **meta_dict)
+        except ValidationError as e:
+            raise ValueError(f"Error parsing line: {line}\n{e}")
+
+    @staticmethod
+    def connection_parser(line: str) -> Connection:
+
+        if '[' in line:
+            base, connection_metadata = line.split('[')
+            connection_metadata = connection_metadata.rstrip(']')
+        else:
+            base = line
+            connection_metadata = None
+
+        try:
+            connection = base.split()[1]
+            if connection.count('-') != 1:
+                raise ValueError()
+            else:
+                connection_a, connection_b = connection.split('-')
+        except ValueError:
+            raise ValueError(f"Error parsing line: '{line}"
+                             f"\nexpected: <connection_a-connection_b> [metadata]'")
+
+        metadata_dict: dict[str, str] = {}
+        if connection_metadata:
+                if connection_metadata.count('=') != 1:
+                    raise ValueError(f"Invalid metadata format: '{connection_metadata}'")
+                key, value = connection_metadata.split('=')
+                metadata_dict[key] = value
+
+        return Connection(zone_a=connection_a, zone_b=connection_b, **metadata_dict)
+
+    def parse(self) -> dict[str, int | Zone | list[Zone] | list[Connection] | None]:
         lines: list[str] = self.filter_lines()
 
         self.nb_drones: int = self.nb_drones_parser(lines[0])
 
-        for line in lines:
+        start = None
+        end = None
+        for line in lines[1:]:
             if line.startswith('start_hub:'):
-                self.zones.append(self.zone_parser(line))
+                start = self.zone_parser(line)
             elif line.startswith('end_hub:'):
-                self.zones.append(self.zone_parser(line))
+                end = self.zone_parser(line)
             elif line.startswith('hub:'):
                 self.zones.append(self.zone_parser(line))
             elif line.startswith('connection:'):
@@ -152,15 +219,22 @@ class Parser:
             else:
                 raise ValueError(f"Invalid line: {line}")
 
+        return {"nb_drones": self.nb_drones,
+                "start_hub": start,
+                "end_hub": end,
+                "zones": self.zones,
+                "connections": self.connections}
+
 
 def main() -> None:
 
-    if len(sys.argv) != 2:
+    if len(argv) != 2:
         print("Usage: python3 map_parser.py <map_file>")
-        sys.exit(1)
+        exit(1)
     else:
-        parser: Parser = Parser(map=sys.argv[1])
+        parser: Parser = Parser(map=argv[1])
         parser.filter_lines()
+        print(parser.parse())
 
 
 if __name__ == "__main__":
