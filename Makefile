@@ -1,5 +1,5 @@
 run:
-	python3.10
+	python3.10 map_parser.py config.txt
 
 install:
 	python3.10 -m pip install -r requirements.txt
@@ -12,7 +12,7 @@ clean:
 	rm -rf .mypy_cache */.mypy_cache
 
 lint:
-	python3.1- -m flake8 .
+	python3.10 -m flake8 .
 	python3.10 -m mypy . --warn-return-any \
 	 					 --warn-unused-ignores \
 	 					 --ignore-missing-imports \
