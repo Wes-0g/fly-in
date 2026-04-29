@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 */__pycache__/
 */.mypy_cache
-
+maps/
 # C extensions
 *.so
 
