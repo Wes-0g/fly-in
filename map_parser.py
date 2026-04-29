@@ -1,10 +1,14 @@
-from pydantic import (BaseModel, Field,
-                      model_validator,
-                      ValidationError,
-                      field_validator)
 from enum import Enum
 from typing import Optional
 from sys import argv, exit
+try:
+    from pydantic import (BaseModel, Field,
+                          model_validator,
+                          ValidationError,
+                          field_validator)
+except ModuleNotFoundError:
+    print("Make install First to install dependencies")
+    exit(1)
 
 
 class ZoneType(Enum):
@@ -29,13 +33,6 @@ class Zone(BaseModel):
         if ' ' in name or '-' in name:
             raise ValueError("name must not contain spaces or dashes")
         return name
-
-    @field_validator('max_drones', mode='after')
-    @classmethod
-    def max_drones_validator(cls, max_drones: int) -> int:
-        if max_drones < 1:
-            raise ValueError("max_drones must be a positive integer")
-        return max_drones
 
 
 class Connection(BaseModel):
@@ -62,21 +59,11 @@ class Map(BaseModel):
     zones: list[Zone]
     connections: list[Connection]
 
-    @field_validator('nb_drones', mode='after')
-    @classmethod
-    def nb_drones_validator(cls, nb_drones: int) -> int:
-        if nb_drones < 1:
-            raise ValueError("nb_drones must be a positive integer")
-        return nb_drones
-
     @model_validator(mode='after')
-    def start_end_validator(self) -> "Map":
+    def duplicates_zones_validator(self) -> "Map":
         if self.start_hub.name == self.end_hub.name:
             raise ValueError("start_hub and end_hub must be different")
-        return self
 
-    @model_validator(mode='after')
-    def duplicates_validator(self) -> "Map":
         seen: list[str] = []
         duplicates: list[str] = []
         for zone in self.zones:
@@ -103,9 +90,9 @@ class Map(BaseModel):
         connection_b = [conn.zone_b for conn in self.connections]
         connections: set[str] = set(connection_a + connection_b)
 
-        if connections.difference(zones):
+        if connections - zones:
             raise ValueError(f"Invalid zone names in connections: "
-                             f"{connections.difference(zones)}")
+                             f"{connections - zones}")
         return self
 
     @model_validator(mode='after')
@@ -131,7 +118,6 @@ class Parser:
         self.map: str = map
         self.zones: list[Zone] = []
         self.connections: list[Connection] = []
-        self.nb_drones: int = 0
 
     def filter_lines(self) -> list[str]:
 
@@ -146,7 +132,7 @@ class Parser:
                 ]
 
                 if not lines:
-                    raise ValueError("No valid lines found in map file")
+                    raise ValueError(f"No valid lines found in {self.map}")
 
                 if not lines[0].startswith('nb_drones:'):
                     raise ValueError(f"First line must contain "
@@ -202,7 +188,7 @@ class Parser:
     @staticmethod
     def zone_parser(line: str) -> Zone:
 
-        if '[' in line:
+        if line.count('[') == 1 and line.count(']') == 1:
             base, metadata = line.split('[')
             metadata = metadata.rstrip(']')
         else:
@@ -215,23 +201,25 @@ class Parser:
             raise ValueError(f"Error parsing line: '{line}'"
                              f"\nexpected: 'name x y [metadata]'")
 
-        meta_dict: dict[str, str] = {}
+        meta_dict: dict = {}
         if metadata:
+            if metadata.count('=') > 3:
+                raise ValueError(f"Invalid metadata format: '{metadata}'")
             for item in metadata.split():
                 if item.count('=') != 1:
                     raise ValueError(f"Invalid metadata format: '{item}'")
                 key, value = item.split('=')
-                meta_dict[key] = value.lower()
+                meta_dict[key.lower()] = value.lower()
 
         try:
-            return Zone(name=name, x=x, y=y, **meta_dict)
-        except ValidationError as e:
+            return Zone(name=name, x=int(x), y=int(y), **meta_dict)
+        except (ValidationError, ValueError) as e:
             raise ValueError(f"Error parsing line: {line}\n{e}")
 
     @staticmethod
     def connection_parser(line: str) -> Connection:
 
-        if '[' in line:
+        if line.count('[') == 1 and line.count(']') == 1:
             base, connection_metadata = line.split('[')
             connection_metadata = connection_metadata.rstrip(']')
         else:
@@ -249,22 +237,23 @@ class Parser:
                              f"\nexpected: <connection_a-connection_b>"
                              f" [metadata]'")
 
-        metadata_dict: dict[str, str] = {}
+        metadata_dict: dict = {}
         if connection_metadata:
             if connection_metadata.count('=') != 1:
                 raise ValueError(f"Invalid metadata format:"
                                  f" '{connection_metadata}'")
             key, value = connection_metadata.split('=')
-            metadata_dict[key] = value
+            metadata_dict[key.lower()] = value.lower()
 
         return Connection(zone_a=connection_a,
-                          zone_b=connection_b, **metadata_dict) # check if the metadata is valid firsst
+                          zone_b=connection_b,
+                          **metadata_dict)
 
     def parse(self) \
-            -> dict[str, int | Zone | list[Zone] | list[Connection] | None]:
+            -> dict:
         lines: list[str] = self.filter_lines()
 
-        self.nb_drones: int = self.nb_drones_parser(lines[0])
+        nb_drones: int = self.nb_drones_parser(lines[0])
 
         start = None
         end = None
@@ -280,7 +269,7 @@ class Parser:
             else:
                 raise ValueError(f"Invalid line: {line}")
 
-        return {"nb_drones": self.nb_drones,
+        return {"nb_drones": nb_drones,
                 "start_hub": start,
                 "end_hub": end,
                 "zones": self.zones,
@@ -292,15 +281,12 @@ def main() -> None:
     if len(argv) != 2:
         print("Usage: python3 map_parser.py <map_file>")
         exit(1)
-    else:
-        parser: Parser = Parser(map=argv[1])
-        parser.filter_lines()
-        map = Map(**parser.parse())
+
+    parser: Parser = Parser(map=argv[1])
+    parser.filter_lines()
+    # map_data = parser.parse()
+    print(Map(**parser.parse()))
 
 
 if __name__ == "__main__":
-    # try:
     main()
-    # except ValueError as e:
-    #     print(e.errors()[0]['msg'])
-    #     exit(1)
