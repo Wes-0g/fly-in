@@ -196,7 +196,7 @@ class Parser:
             metadata = None
 
         try:
-            _, name, x, y = base.strip().split(' ')
+            _, name, x, y = base.strip().split()
         except ValueError:
             raise ValueError(f"Error parsing line: '{line}'"
                              f"\nexpected: 'name x y [metadata]'")
