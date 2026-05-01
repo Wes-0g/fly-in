@@ -116,8 +116,6 @@ class Parser:
 
     def __init__(self, map: str) -> None:
         self.map: str = map
-        self.zones: list[Zone] = []
-        self.connections: list[Connection] = []
 
     def filter_lines(self) -> list[str]:
 
@@ -249,32 +247,45 @@ class Parser:
                           zone_b=connection_b,
                           **metadata_dict)
 
-    def parse(self) \
-            -> dict:
+    def parse(self) -> Map:
         lines: list[str] = self.filter_lines()
 
         nb_drones: int = self.nb_drones_parser(lines[0])
 
         start = None
         end = None
+        zones: list[Zone] = []
+        connections: list[Connection] = []
         for line in lines[1:]:
             if line.startswith('start_hub:'):
                 start = self.zone_parser(line)
             elif line.startswith('end_hub:'):
                 end = self.zone_parser(line)
             elif line.startswith('hub:'):
-                self.zones.append(self.zone_parser(line))
+                zones.append(self.zone_parser(line))
             elif line.startswith('connection:'):
-                self.connections.append(self.connection_parser(line))
+                connections.append(self.connection_parser(line))
             else:
                 raise ValueError(f"Invalid line: {line}")
 
-        return {"nb_drones": nb_drones,
-                "start_hub": start,
-                "end_hub": end,
-                "zones": self.zones,
-                "connections": self.connections}
+        if not start:
+            raise ValueError("start_hub line not found in input")
+        if not end:
+            raise ValueError("end_hub line not found in input")
 
+        return Map(nb_drones=nb_drones,
+                   start_hub=start,
+                   end_hub=end,
+                   zones=zones,
+                   connections=connections)
+
+
+# class ParsingError(Exception): # good concept to add in the future
+#
+#     def __init__(self, line_no: int, line: str, reason: str) -> None:
+#         self.line_no = line_no
+#         self.line = line
+#         self.reason = reason
 
 def main() -> None:
 
@@ -284,8 +295,7 @@ def main() -> None:
 
     parser: Parser = Parser(map=argv[1])
     parser.filter_lines()
-    # map_data = parser.parse()
-    print(Map(**parser.parse()))
+    print(parser.parse())
 
 
 if __name__ == "__main__":
