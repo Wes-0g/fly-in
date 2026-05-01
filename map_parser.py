@@ -83,11 +83,11 @@ class Map(BaseModel):
     @model_validator(mode='after')
     def valid_zone_connections(self) -> "Map":
 
-        zones = {zone.name for zone in self.zones}
+        zones: set[str] = {zone.name for zone in self.zones}
         zones.add(self.start_hub.name)
         zones.add(self.end_hub.name)
-        connection_a = [conn.zone_a for conn in self.connections]
-        connection_b = [conn.zone_b for conn in self.connections]
+        connection_a: list[str] = [conn.zone_a for conn in self.connections]
+        connection_b: list[str] = [conn.zone_b for conn in self.connections]
         connections: set[str] = set(connection_a + connection_b)
 
         if connections - zones:
@@ -295,8 +295,11 @@ def main() -> None:
 
     parser: Parser = Parser(map=argv[1])
     parser.filter_lines()
-    print(parser.parse())
+    #print(parser.parse())
+    from graph import Graph
 
+    graph: Graph = Graph(map=parser.parse())
+    print(graph.adjacency)
 
 if __name__ == "__main__":
     main()
