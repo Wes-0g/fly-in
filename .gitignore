@@ -5,6 +5,8 @@ __pycache__/
 */__pycache__/
 */.mypy_cache
 maps/
+maps/*
+
 # C extensions
 *.so
 
