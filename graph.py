@@ -1,4 +1,5 @@
 from map_parser import Map, Zone, Connection
+from math import inf, isinf
 
 
 class Graph:
@@ -20,3 +21,9 @@ class Graph:
         for conn in self.map.connections:
             self.adjacency[conn.zone_a].append((conn.zone_b, conn))
             self.adjacency[conn.zone_b].append((conn.zone_a, conn))
+
+    def movement_cost(self, zone: str) -> int:
+        return self.nodes[zone].zone.movement_cost()
+
+    def path_finding(self, start: str, end: str) -> list[str]:
+        pass
