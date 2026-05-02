@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import Optional
 from sys import argv, exit
+from math import inf
+
 try:
     from pydantic import (BaseModel, Field,
                           model_validator,
@@ -17,6 +19,13 @@ class ZoneType(Enum):
     PRIORITY = "priority"
     BLOCKED = "blocked"
 
+    def movement_cost(self) -> int:
+
+        cost: dict = {ZoneType.NORMAL: 1,
+                      ZoneType.PRIORITY: 1,
+                      ZoneType.RESTRICTED: 2,
+                      ZoneType.BLOCKED: inf}
+        return cost[self]
 
 class Zone(BaseModel):
 
