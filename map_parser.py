@@ -19,7 +19,7 @@ class ZoneType(Enum):
     PRIORITY = "priority"
     BLOCKED = "blocked"
 
-    def movement_cost(self) -> int:
+    def movement_cost(self) -> float:
 
         cost: dict = {ZoneType.NORMAL: 1,
                       ZoneType.PRIORITY: 1,
@@ -118,6 +118,13 @@ class Map(BaseModel):
                 raise ValueError(f"Duplicate connection: {conn_a}-{conn_b}")
             seen_connections.add((conn_a, conn_b))
 
+        return self
+
+    @model_validator(mode='after')
+    def unique_start_end(self) -> "Map":
+
+        if self.start_hub.x == self.end_hub.x and self.start_hub.y == self.end_hub.y:
+            raise ValueError("start_hub and end_hub must be different")
         return self
 
 
@@ -306,9 +313,11 @@ def main() -> None:
     parser.filter_lines()
     #print(parser.parse())
     from graph import Graph
-
-    graph: Graph = Graph(map=parser.parse())
-    print(graph.adjacency)
+    map = parser.parse()
+    graph: Graph = Graph(map)
+    path = graph.path_finding(map.start_hub.name, map.end_hub.name)
+    for zone in path:
+        print(zone)
 
 if __name__ == "__main__":
     main()
