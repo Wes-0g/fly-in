@@ -28,13 +28,14 @@ class Graph:
 
     def path_finding(self, start: str, end: str) -> list[Zone] | None:
         distances: dict[str, float] = {node: inf for node in self.nodes}
-        reverse_path: dict[str, str | None] = {node: None for node in self.nodes}
+        previous: dict[str, str | None] = {node: None for node in self.nodes}
 
         distances[start] = 0
         priority_queue: list[tuple[float, int, str]] = [(0, 1, start)]
-
+        print(f"{self.adjacency}\n")
+        print(f"{self.nodes}\n")
         while priority_queue:
-
+            print(f"{priority_queue}\n")
             distance, _, current = heappop(priority_queue)
 
             if distance > distances[current]:
@@ -51,9 +52,8 @@ class Graph:
 
                 if new_cost < distances[neighbor]:
                     distances[neighbor] = new_cost
-                    reverse_path[neighbor] = current
-                    is_priority: int = 0 if (self.nodes[neighbor].zone
-                                             == ZoneType.PRIORITY) else 1
+                    previous[neighbor] = current
+                    is_priority: int = 0 if self.nodes[neighbor].zone.value == "priority" else 1
                     heappush(priority_queue, (new_cost, is_priority, neighbor))
 
         path: list[Zone] = []
@@ -63,6 +63,6 @@ class Graph:
         current2: str | None = end
         while current2 is not None:
             path.append(self.nodes[current2])
-            current2 = reverse_path[current2]
+            current2 = previous[current2]
         path.reverse()
         return path
