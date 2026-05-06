@@ -1,9 +1,10 @@
 from map_parser import Map, Zone, Connection, ZoneType
 from heapq import heappop, heappush
+from typing import Optional
 from math import inf
 
 
-class Graph:
+class DroneNetwork:
 
     def __init__(self, map: Map) -> None:
 
@@ -26,16 +27,17 @@ class Graph:
     def movement_cost(self, zone: str) -> float:
         return self.nodes[zone].zone.movement_cost()
 
-    def path_finding(self, start: str, end: str) -> list[Zone] | None:
+    def path_finding(self, start: str, end: str,
+                     blocked_zones: Optional[set[str]] = None) -> list[Zone]:
+        if blocked_zones is None:
+            blocked_zones = set()
+
         distances: dict[str, float] = {node: inf for node in self.nodes}
         previous: dict[str, str | None] = {node: None for node in self.nodes}
 
         distances[start] = 0
         priority_queue: list[tuple[float, int, str]] = [(0, 1, start)]
-        print(f"{self.adjacency}\n")
-        print(f"{self.nodes}\n")
         while priority_queue:
-            print(f"{priority_queue}\n")
             distance, _, current = heappop(priority_queue)
 
             if distance > distances[current]:
@@ -45,7 +47,8 @@ class Graph:
 
             for neighbor, conn in self.adjacency[current]:
 
-                if self.nodes[neighbor].zone == ZoneType.BLOCKED:
+                if (self.nodes[neighbor].zone == ZoneType.BLOCKED
+                        or neighbor in blocked_zones):
                     continue
 
                 new_cost = distance + self.movement_cost(neighbor)
@@ -53,12 +56,13 @@ class Graph:
                 if new_cost < distances[neighbor]:
                     distances[neighbor] = new_cost
                     previous[neighbor] = current
-                    is_priority: int = 0 if self.nodes[neighbor].zone.value == "priority" else 1
+                    is_priority: int = 0 if (self.nodes[neighbor].zone.value
+                                             == "priority") else 1
                     heappush(priority_queue, (new_cost, is_priority, neighbor))
 
         path: list[Zone] = []
         if distances[end] == inf:
-            return None
+            raise ValueError("No path found")
 
         current2: str | None = end
         while current2 is not None:
@@ -66,3 +70,32 @@ class Graph:
             current2 = previous[current2]
         path.reverse()
         return path
+
+    def k_shortest_paths(self, start: str, end: str, k: int)\
+            -> list[list[Zone]]:
+
+        try:
+            short_path: list[Zone] = self.path_finding(start, end)
+        except ValueError:
+            return []
+
+        candidate_short_paths: list[list[Zone]] = [short_path]
+        seen: set[tuple[str, ...]] = {tuple(zone.name for zone in short_path)}
+
+        zones: list[Zone] = short_path[1:-1]
+
+        for zone in zones:
+            if len(candidate_short_paths) == k:
+                break
+
+            try:
+                new_path = self.path_finding(start, end, blocked_zones={zone.name})
+            except ValueError:
+                continue
+
+            key = tuple(zone.name for zone in new_path)
+            if key not in seen:
+                seen.add(key)
+                candidate_short_paths.append(new_path)
+
+        return candidate_short_paths
