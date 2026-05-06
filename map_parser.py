@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Optional
-from sys import argv, exit
+from sys import exit
 from math import inf
 
 try:
@@ -21,11 +21,12 @@ class ZoneType(Enum):
 
     def movement_cost(self) -> float:
 
-        cost: dict = {ZoneType.NORMAL: 1,
-                      ZoneType.PRIORITY: 1,
-                      ZoneType.RESTRICTED: 2,
-                      ZoneType.BLOCKED: inf}
+        cost: dict[ZoneType, float] = {ZoneType.NORMAL: 1,
+                                       ZoneType.PRIORITY: 1,
+                                       ZoneType.RESTRICTED: 2,
+                                       ZoneType.BLOCKED: inf}
         return cost[self]
+
 
 class Zone(BaseModel):
 
@@ -123,7 +124,8 @@ class Map(BaseModel):
     @model_validator(mode='after')
     def unique_start_end(self) -> "Map":
 
-        if self.start_hub.x == self.end_hub.x and self.start_hub.y == self.end_hub.y:
+        if (self.start_hub.x == self.end_hub.x
+                and self.start_hub.y == self.end_hub.y):
             raise ValueError("start_hub and end_hub must be different")
         return self
 
@@ -302,22 +304,3 @@ class Parser:
 #         self.line_no = line_no
 #         self.line = line
 #         self.reason = reason
-
-def main() -> None:
-
-    if len(argv) != 2:
-        print("Usage: python3 map_parser.py <map_file>")
-        exit(1)
-
-    parser: Parser = Parser(map=argv[1])
-    parser.filter_lines()
-    #print(parser.parse())
-    from graph import Graph
-    map = parser.parse()
-    graph: Graph = Graph(map)
-    path = graph.path_finding(map.start_hub.name, map.end_hub.name)
-    for zone in path:
-        print(zone)
-
-if __name__ == "__main__":
-    main()
