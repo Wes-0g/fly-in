@@ -1,7 +1,7 @@
 from map_parser import Parser
-from sys import argv
+from sys import argv, exit
 from drone_network import DroneNetwork
-from drone import Drone
+from simulation import Simulator
 
 
 def main() -> None:
@@ -17,7 +17,7 @@ def main() -> None:
     # path = graph.path_finding(map.start_hub.name, map.end_hub.name)
     #     for zone in path:
     #         print(zone)
-    paths = graph.k_shortest_paths(map.start_hub.name, map.end_hub.name, 10)
+    paths = graph.k_shortest_paths(map.start_hub.name, map.end_hub.name, 2)
 
     for path in paths:
         for zone in path:
@@ -25,10 +25,7 @@ def main() -> None:
             if zone == map.end_hub:
                 print()
 
-    drone_list: list[Drone] = []
-    for n in range(1, map.nb_drones + 1):
-
-        drone_list.append(Drone(n, map.start_hub.name))
+    sim = Simulator(map, 1)
 
 
 if __name__ == "__main__":
