@@ -26,16 +26,7 @@ class Simulator:
         self.paths: list[list[Zone]] = self.drone_network.k_shortest_paths(
             map.start_hub.name, map.end_hub.name, k)
 
-        path_capacity: list[int] = []
-        for path in self.paths:
-            zones: list[Zone] = path[1:-1]
-            if not zones:
-                capacity = 1
-            else:
-                capacity = min(zone.max_drones for zone in zones)
-            path_capacity.append(capacity)
+    def simulate(self) -> None:
 
-        for drone in self.drones:
-            best_path_index: int = path_capacity.index(max(path_capacity))
-            drone.path = self.paths[best_path_index]
-            path_capacity[best_path_index] -= 1
+        while not all(drone.arrived() for drone in self.drones):
+            pass
