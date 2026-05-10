@@ -10,20 +10,26 @@ class DroneState(Enum):
 
 class Drone:
 
-    def __init__(self, id: int, current_zone: str) -> None:
-        self.id = id
-        self.current_zone = current_zone
-        self.path: list[Zone] = []
+    def __init__(self, id: int, path: list[Zone]) -> None:
+        self.id: int = id
+        self.path: list[Zone] = path
         self.path_index: int = 0
         self.state: DroneState = DroneState.WAITING
 
+    @property
     def current_zone(self) -> Zone:
         return self.path[self.path_index]
 
+    @property
     def next_zone(self) -> Zone | None:
-        if self.arrived():
+        if self.arrived:
             return None
         return self.path[self.path_index + 1]
 
+    @property
     def arrived(self) -> bool:
         return self.path_index == len(self.path) - 1
+
+    def move(self) -> None:
+        if not self.arrived:
+            self.path_index += 1
