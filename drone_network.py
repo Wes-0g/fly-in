@@ -24,6 +24,12 @@ class DroneNetwork:
             self.adjacency[conn.zone_a].append((conn.zone_b, conn))
             self.adjacency[conn.zone_b].append((conn.zone_a, conn))
 
+    def get_connection(self, zone_a: str, zone_b: str) -> Connection:
+        for neighbor, conn in self.adjacency[zone_a]:
+            if neighbor == zone_b:
+                return conn
+        raise ValueError(f"No connection between {zone_a} and {zone_b}")
+
     def movement_cost(self, zone: str) -> float:
         return self.nodes[zone].zone.movement_cost()
 
