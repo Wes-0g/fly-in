@@ -25,7 +25,8 @@ def main() -> None:
             if zone == map.end_hub:
                 print()
 
-    sim = Simulator(map, 1)
+    sim = Simulator(map, 2)
+    sim.simulate()
 
 
 if __name__ == "__main__":
