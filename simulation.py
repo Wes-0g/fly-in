@@ -62,6 +62,66 @@ class Simulator:
         moved_drones: list[Drone] = []
         sorted_drones = sorted(drones, key=lambda drone: drone.path_index, reverse=True)
 
+        for drone in sorted_drones:
+            if drone.arrived:
+                continue
+            current_zone = drone.current_zone
+            next_zone = drone.next_zone
+            if not next_zone:
+                continue
+            edge = tuple(sorted((current_zone.name, next_zone.name)))
+            conn = self.drone_network.get_connection(current_zone.name, next_zone.name)
+            zone_availability = self.zones_count[next_zone.name] < next_zone.max_drones
+            edge_availability = self.links_count[edge] < conn.max_link_capacity
+            if zone_availability and edge_availability:
+                self.zones_count[next_zone.name] += 1
+                self.links_count[edge] += 1
+                moved_drones.append(drone)
+
+        for drone in moved_drones:
+            drone.move()
+            if drone.arrived:
+                drone.state = DroneState.ARRIVED
+            else:
+                drone.state = DroneState.MOVING
+
+        arrived_drones = [drone for drone in moved_drones if drone.arrived]
+
+        for drone in arrived_drones:
+            self.active_drones.remove(drone)
+            self.arrived_drones.append(drone)
+
+        return moved_drones
 
     def simulate(self) -> None:
-        pass
+        
+        print(self.map.nb_drones)
+        while self.active_drones or self.waiting_drones:
+            moves: list[str] = []
+
+            self.zones_count: dict[str, int] = {
+                zone.name: 0 for zone in self.drone_network.all_zones
+            }
+
+            self.links_count: dict[tuple[str, str], int] = {
+                tuple(sorted((conn.zone_a, conn.zone_b))): 0
+                for conn in self.map.connections
+            }
+
+            for drone in self.active_drones:
+                if not drone.arrived:
+                    drone.state = DroneState.WAITING
+                    self.zones_count[drone.current_zone.name] += 1
+
+            current_active_drones = self.active_drones.copy()
+            launched_drones = self.launch_waiting_drones()
+            moved_drones = self.move_active_drones(current_active_drones)
+
+            for drone in moved_drones + launched_drones:
+                moves.append(f"D{drone.id}-{drone.current_zone.name}")
+
+            self.current_turn += 1
+            if moves:
+                print(f"[T{self.current_turn}] {' '.join(moves)}")
+        print()
+        print(self.current_turn)
