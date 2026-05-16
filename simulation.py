@@ -31,66 +31,51 @@ class Simulator:
         self.active_drones: list[Drone] = []
         self.arrived_drones: list[Drone] = []
 
-    def launch_waiting_drones(self) -> list[Drone]:
-        launched_drones: list[Drone] = []
-        for drone in self.waiting_drones:
-            current_zone = drone.current_zone
-            next_zone = drone.next_zone
-            if not next_zone:
-                continue
-
-            edge = tuple(sorted((current_zone.name, next_zone.name)))
-            conn = self.drone_network.get_connection(current_zone.name, next_zone.name)
-            zone_availability = self.zones_count[next_zone.name] < next_zone.max_drones
-            edge_availability = self.links_count[edge] < conn.max_link_capacity
-
-            if zone_availability and edge_availability:
-                self.zones_count[current_zone.name] -= 1
-                self.zones_count[next_zone.name] += 1
-                self.links_count[edge] += 1
-                drone.move()
-                drone.state = DroneState.MOVING
-                launched_drones.append(drone)
-
-        for drone in launched_drones:
-            self.waiting_drones.remove(drone)
-            self.active_drones.append(drone)
-
-        return launched_drones
-
-    def move_active_drones(self, drones: list[Drone]) -> list[Drone]:
+    def move_drones(self, active_drones: list[Drone]) -> list[Drone]:
         moved_drones: list[Drone] = []
-        sorted_drones = sorted(drones, key=lambda drone: drone.path_index, reverse=True)
 
-        for drone in sorted_drones:
+        all_drones: list[Drone] = sorted(
+            active_drones + self.waiting_drones,
+            key=lambda drone: drone.path_index,
+            reverse=True
+        )
+
+        for drone in all_drones:
             if drone.arrived:
                 continue
             current_zone = drone.current_zone
             next_zone = drone.next_zone
             if not next_zone:
                 continue
+
             edge = tuple(sorted((current_zone.name, next_zone.name)))
             conn = self.drone_network.get_connection(current_zone.name, next_zone.name)
-            zone_availability = self.zones_count[next_zone.name] < next_zone.max_drones
-            edge_availability = self.links_count[edge] < conn.max_link_capacity
-            if zone_availability and edge_availability:
-                self.zones_count[current_zone.name] -= 1
+
+            if (self.zones_count[next_zone.name] < next_zone.max_drones
+                    and self.links_count[edge] < conn.max_link_capacity):
+
+                if drone in self.active_drones:
+                    self.zones_count[current_zone.name] -= 1
+
                 self.zones_count[next_zone.name] += 1
                 self.links_count[edge] += 1
                 moved_drones.append(drone)
 
         for drone in moved_drones:
             drone.move()
+
             if drone.arrived:
+                self.active_drones.remove(drone)
+                self.arrived_drones.append(drone)
                 drone.state = DroneState.ARRIVED
-            else:
+
+            elif drone in self.waiting_drones:
+                self.waiting_drones.remove(drone)
+                self.active_drones.append(drone)
                 drone.state = DroneState.MOVING
 
-        arrived_drones = [drone for drone in moved_drones if drone.arrived]
-
-        for drone in arrived_drones:
-            self.active_drones.remove(drone)
-            self.arrived_drones.append(drone)
+            else:
+                drone.state = DroneState.MOVING
 
         return moved_drones
 
@@ -111,10 +96,9 @@ class Simulator:
                     drone.state = DroneState.WAITING
 
             current_active_drones = self.active_drones.copy()
-            launched_drones = self.launch_waiting_drones()
-            moved_drones = self.move_active_drones(current_active_drones)
+            moves_drones = self.move_drones(current_active_drones)
 
-            for drone in moved_drones + launched_drones:
+            for drone in moves_drones:
                 moves.append(f"D{drone.id}-{drone.current_zone.name}")
 
             self.current_turn += 1
