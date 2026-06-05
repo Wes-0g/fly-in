@@ -1,5 +1,5 @@
 run:
-	python3.10 map_parser.py config.txt
+	python3.10 fly-in.py config.txt
 
 install:
 	python3.10 -m pip install -r requirements.txt
