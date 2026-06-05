@@ -16,7 +16,7 @@ class Simulator:
         }
 
         self.zones_count[map.start_hub.name] = self.map.nb_drones
-        self.links_count: dict[tuple[str, ...], int] = {
+        self.links_occupation: dict[tuple[str, ...], int] = {
             tuple(sorted((conn.zone_a, conn.zone_b))): 0
             for conn in map.connections
         }
@@ -52,13 +52,13 @@ class Simulator:
             conn = self.drone_network.get_connection(current_zone.name, next_zone.name)
 
             if (self.zones_count[next_zone.name] < next_zone.max_drones
-                    and self.links_count[edge] < conn.max_link_capacity):
+                    and self.links_occupation[edge] < conn.max_link_capacity):
 
                 if drone in self.active_drones:
                     self.zones_count[current_zone.name] -= 1
 
                 self.zones_count[next_zone.name] += 1
-                self.links_count[edge] += 1
+                self.links_occupation[edge] += 1
                 moved_drones.append(drone)
 
         for drone in moved_drones:
@@ -86,7 +86,7 @@ class Simulator:
 
             self.zones_count[self.map.end_hub.name] = 0
 
-            self.links_count: dict[tuple[str, str], int] = {
+            self.links_occupation: dict[tuple[str, str], int] = {
                 tuple(sorted((conn.zone_a, conn.zone_b))): 0
                 for conn in self.map.connections
             }
