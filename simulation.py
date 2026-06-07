@@ -31,8 +31,8 @@ class Simulator:
         self.active_drones: list[Drone] = []
         self.arrived_drones: list[Drone] = []
 
-    def move_drones(self, active_drones: list[Drone]) -> list[Drone]:
-        moved_drones: list[Drone] = []
+    def move_drones(self, active_drones: list[Drone]) -> list[tuple[Drone, str]]:
+        moved_drones: list[tuple[Drone, str]] = []
 
         # all_drones: list[Drone] = sorted(
         #     active_drones + self.waiting_drones,
@@ -46,6 +46,7 @@ class Simulator:
         )
 
         for drone in all_drones:
+            print(f"D{drone.id} state={drone.state} zone={drone.current_zone.name} turns={drone.turns_in_restricted}")
             if drone.arrived:
                 continue
             current_zone = drone.current_zone
@@ -60,7 +61,7 @@ class Simulator:
                 drone.turns_in_restricted -= 1
                 if drone.turns_in_restricted == 0:
                     self.zones_occupation[current_zone.name] -= 1
-                    moved_drones.append(drone)
+                    moved_drones.append((drone, f"D{drone.id}-{drone.restricted_zone}"))
                 continue
 
             if next_zone.zone == ZoneType.RESTRICTED and drone not in self.waiting_drones:
@@ -71,6 +72,7 @@ class Simulator:
                     drone.turns_in_restricted = 1
                     self.links_occupation[edge] += 1
                     self.zones_occupation[next_zone.name] += 1
+                    moved_drones.append((drone, f"D{drone.id}-{'-'.join(drone.current_connection)}"))
                 continue
 
             if (self.zones_occupation[next_zone.name] < next_zone.max_drones
@@ -81,9 +83,9 @@ class Simulator:
 
                 self.zones_occupation[next_zone.name] += 1
                 self.links_occupation[edge] += 1
-                moved_drones.append(drone)
+                moved_drones.append((drone, f"D{drone.id}-{drone.current_zone.name}"))
 
-        for drone in moved_drones:
+        for drone, _ in moved_drones:
             drone.move()
 
             if drone.arrived:
@@ -123,11 +125,8 @@ class Simulator:
             current_active_drones = self.active_drones.copy()
             moves_drones = self.move_drones(current_active_drones)
 
-            for drone in moves_drones:
-                if drone.state == DroneState.IN_THE_WAY:
-                    moves.append(f"D{drone.id}-{'-'.join(drone.current_connection)}")
-                else:
-                    moves.append(f"D{drone.id}-{drone.current_zone.name}")
+            for drone, msg in moves_drones:
+                moves.append(msg)
 
             self.current_turn += 1
             if moves:
