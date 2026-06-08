@@ -5,7 +5,6 @@ from map_parser import Zone
 class DroneState(Enum):
     WAITING = "waiting"
     MOVING = "moving"
-    IN_THE_WAY = "in_the_way"
     ARRIVED = "arrived"
 
 
@@ -16,8 +15,7 @@ class Drone:
         self.path: list[Zone] = path
         self.path_index: int = 0
         self.state: DroneState = DroneState.WAITING
-        self.turns_in_restricted: int = 0
-        self.restricted_zone: str | None = None
+        self.is_restricted: bool = False
 
     @property
     def current_zone(self) -> Zone:
@@ -39,12 +37,5 @@ class Drone:
                 self.path[self.path_index + 1].name)
 
     def move(self) -> None:
-        if self.state == DroneState.IN_THE_WAY:
-            self.turns_in_restricted -= 1
-            if self.turns_in_restricted == 0:
-                self.path_index += 1
-                self.restricted_zone = None
-
-        else:
-            if not self.arrived:
-                self.path_index += 1
+        if not self.arrived:
+            self.path_index += 1
