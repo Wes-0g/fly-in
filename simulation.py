@@ -31,8 +31,8 @@ class Simulator:
         self.active_drones: list[Drone] = []
         self.arrived_drones: list[Drone] = []
 
-    def move_drones(self, active_drones: list[Drone]) -> list[tuple[Drone, str]]:
-        moved_drones: list[tuple[Drone, str]] = []
+    def move_drones(self, active_drones: list[Drone]) -> list[tuple[Drone, str, bool]]:
+        moved_drones: list[tuple[Drone, str, bool]] = []
 
         # all_drones: list[Drone] = sorted(
         #     active_drones + self.waiting_drones,
@@ -40,13 +40,15 @@ class Simulator:
         #     reverse=True
         # )
         all_drones = (
-                [d for d in active_drones if d.state == DroneState.IN_THE_WAY] +
-                [d for d in active_drones if d.state != DroneState.IN_THE_WAY] +
+                [d for d in active_drones if d.is_restricted] +
+                [d for d in active_drones if not d.is_restricted] +
                 self.waiting_drones
         )
-
+        for d in all_drones:
+            print(f"D{d.id} is_restricted={d.is_restricted} index={d.path_index} zone={d.current_zone.name}")
         for drone in all_drones:
-            print(f"D{drone.id} state={drone.state} zone={drone.current_zone.name} turns={drone.turns_in_restricted}")
+            #print(f"LOOP: D{drone.id} state={drone.state} is_restricted={drone.is_restricted}")
+
             if drone.arrived:
                 continue
             current_zone = drone.current_zone
@@ -57,22 +59,19 @@ class Simulator:
             edge = tuple(sorted((current_zone.name, next_zone.name)))
             conn = self.drone_network.get_connection(current_zone.name, next_zone.name)
 
-            if drone.state == DroneState.IN_THE_WAY:
-                drone.turns_in_restricted -= 1
-                if drone.turns_in_restricted == 0:
-                    self.zones_occupation[current_zone.name] -= 1
-                    moved_drones.append((drone, f"D{drone.id}-{drone.restricted_zone}"))
+            if drone.is_restricted:
+                drone.is_restricted = False
+                self.zones_occupation[current_zone.name] -= 1
+                moved_drones.append((drone, f"D{drone.id}-{next_zone.name}", True))
                 continue
-
-            if next_zone.zone == ZoneType.RESTRICTED and drone not in self.waiting_drones:
+            if next_zone.zone == ZoneType.RESTRICTED:
                 if (self.zones_occupation[next_zone.name] < next_zone.max_drones
                         and self.links_occupation[edge] < conn.max_link_capacity):
-                    drone.state = DroneState.IN_THE_WAY
-                    drone.restricted_zone = next_zone.name
-                    drone.turns_in_restricted = 1
+                    drone.is_restricted = True
                     self.links_occupation[edge] += 1
                     self.zones_occupation[next_zone.name] += 1
-                    moved_drones.append((drone, f"D{drone.id}-{'-'.join(drone.current_connection)}"))
+                    self.zones_occupation[current_zone.name] -= 1
+                    moved_drones.append((drone, f"D{drone.id}-{'-'.join(drone.current_connection)}", False))
                 continue
 
             if (self.zones_occupation[next_zone.name] < next_zone.max_drones
@@ -83,9 +82,12 @@ class Simulator:
 
                 self.zones_occupation[next_zone.name] += 1
                 self.links_occupation[edge] += 1
-                moved_drones.append((drone, f"D{drone.id}-{drone.current_zone.name}"))
+                moved_drones.append((drone, f"D{drone.id}-{next_zone.name}", False))
 
-        for drone, _ in moved_drones:
+        for drone, _, is_restricted in moved_drones:
+            if is_restricted:
+                drone.state = DroneState.WAITING
+                continue
             drone.move()
 
             if drone.arrived:
@@ -116,16 +118,16 @@ class Simulator:
             }
 
             for drone in self.active_drones:
-                if drone.state == DroneState.IN_THE_WAY:
+                if not drone.arrived:
+                    drone.state = DroneState.WAITING
+                if drone.is_restricted:
                     edge = tuple(sorted(drone.current_connection))
                     self.links_occupation[edge] += 1
-                if not drone.arrived and drone.state != DroneState.IN_THE_WAY:
-                    drone.state = DroneState.WAITING
 
             current_active_drones = self.active_drones.copy()
             moves_drones = self.move_drones(current_active_drones)
 
-            for drone, msg in moves_drones:
+            for drone, msg, _ in moves_drones:
                 moves.append(msg)
 
             self.current_turn += 1
