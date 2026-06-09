@@ -31,23 +31,16 @@ class Simulator:
         self.active_drones: list[Drone] = []
         self.arrived_drones: list[Drone] = []
 
-    def move_drones(self, active_drones: list[Drone]) -> list[tuple[Drone, str, bool]]:
-        moved_drones: list[tuple[Drone, str, bool]] = []
+    def move_drones(self, active_drones: list[Drone]) -> list[tuple[Drone, str]]:
+        moved_drones: list[tuple[Drone, str]] = []
 
-        # all_drones: list[Drone] = sorted(
-        #     active_drones + self.waiting_drones,
-        #     key=lambda drone: drone.path_index,
-        #     reverse=True
-        # )
-        all_drones = (
-                [d for d in active_drones if d.is_restricted] +
-                [d for d in active_drones if not d.is_restricted] +
-                self.waiting_drones
+        all_drones: list[Drone] = sorted(
+            active_drones + self.waiting_drones,
+            key=lambda drone: drone.path_index,
+            reverse=True
         )
-        for d in all_drones:
-            print(f"D{d.id} is_restricted={d.is_restricted} index={d.path_index} zone={d.current_zone.name}")
+
         for drone in all_drones:
-            #print(f"LOOP: D{drone.id} state={drone.state} is_restricted={drone.is_restricted}")
 
             if drone.arrived:
                 continue
@@ -62,7 +55,7 @@ class Simulator:
             if drone.is_restricted:
                 drone.is_restricted = False
                 self.zones_occupation[current_zone.name] -= 1
-                moved_drones.append((drone, f"D{drone.id}-{next_zone.name}", True))
+                moved_drones.append((drone, f"D{drone.id}-{next_zone.name}"))
                 continue
             if next_zone.zone == ZoneType.RESTRICTED:
                 if (self.zones_occupation[next_zone.name] < next_zone.max_drones
@@ -71,7 +64,7 @@ class Simulator:
                     self.links_occupation[edge] += 1
                     self.zones_occupation[next_zone.name] += 1
                     self.zones_occupation[current_zone.name] -= 1
-                    moved_drones.append((drone, f"D{drone.id}-{'-'.join(drone.current_connection)}", False))
+                    moved_drones.append((drone, f"D{drone.id}-{'-'.join(drone.current_connection)}"))
                 continue
 
             if (self.zones_occupation[next_zone.name] < next_zone.max_drones
@@ -82,10 +75,10 @@ class Simulator:
 
                 self.zones_occupation[next_zone.name] += 1
                 self.links_occupation[edge] += 1
-                moved_drones.append((drone, f"D{drone.id}-{next_zone.name}", False))
+                moved_drones.append((drone, f"D{drone.id}-{next_zone.name}"))
 
-        for drone, _, is_restricted in moved_drones:
-            if is_restricted:
+        for drone, _ in moved_drones:
+            if drone.is_restricted:
                 drone.state = DroneState.WAITING
                 continue
             drone.move()
@@ -127,7 +120,7 @@ class Simulator:
             current_active_drones = self.active_drones.copy()
             moves_drones = self.move_drones(current_active_drones)
 
-            for drone, msg, _ in moves_drones:
+            for drone, msg in moves_drones:
                 moves.append(msg)
 
             self.current_turn += 1
