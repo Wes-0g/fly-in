@@ -95,7 +95,9 @@ class DroneNetwork:
                 break
 
             try:
-                new_path = self.path_finding(start, end, blocked_zones={zone.name})
+                new_path = self.path_finding(start,
+                                             end,
+                                             blocked_zones={zone.name})
             except ValueError:
                 continue
 
