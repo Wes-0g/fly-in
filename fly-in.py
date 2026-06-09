@@ -11,7 +11,7 @@ def main() -> None:
         exit(1)
 
     parser: Parser = Parser(map=argv[1])
-    #print(parser.parse())
+    # print(parser.parse())
     map = parser.parse()
     graph: DroneNetwork = DroneNetwork(map)
     # path = graph.path_finding(map.start_hub.name, map.end_hub.name)
