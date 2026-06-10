@@ -1,7 +1,6 @@
 from enum import Enum
 from map_parser import Zone
 
-
 class DroneState(Enum):
     WAITING = "waiting"
     MOVING = "moving"
@@ -33,8 +32,9 @@ class Drone:
 
     @property
     def current_connection(self) -> tuple[str, str]:
-        return (self.path[self.path_index].name,
-                self.path[self.path_index + 1].name)
+        from simulation import colorize
+        return (colorize(self.path[self.path_index].name, self.path[self.path_index].color),
+                colorize(self.path[self.path_index + 1].name, self.path[self.path_index + 1].color))
 
     def move(self) -> None:
         if not self.arrived:
