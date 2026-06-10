@@ -7,19 +7,16 @@ colors: dict[str, str] = {
     "black": "\033[30m",
     "red": "\033[31m",
     "green": "\033[32m",
-    "yellow": "\033[33m",
+    "yellow": "\033[93m",
     "blue": "\033[34m",
-    "magenta": "\033[35m",
+    "magenta": "\033[95m",
     "cyan": "\033[36m",
-
     "gray": "\033[90m",
-    "bright_red": "\033[91m",
-    "bright_green": "\033[92m",
-    "bright_yellow": "\033[93m",
-    "bright_blue": "\033[94m",
-    "bright_magenta": "\033[95m",
-    "bright_cyan": "\033[96m",
-    "bright_white": "\033[97m"
+    "orange": "\033[91m",
+    "lime": "\033[92m",
+    "brown": "\033[33m",
+    "purple": "\033[35m",
+    "gold": "\033[93m",
 }
 
 def colorize(text: str, color: str | None) -> str:
