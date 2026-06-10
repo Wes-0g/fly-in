@@ -3,6 +3,31 @@ from drone_network import DroneNetwork
 from map_parser import Map, Zone, ZoneType
 
 
+colors: dict[str, str] = {
+    "black": "\033[30m",
+    "red": "\033[31m",
+    "green": "\033[32m",
+    "yellow": "\033[33m",
+    "blue": "\033[34m",
+    "magenta": "\033[35m",
+    "cyan": "\033[36m",
+
+    "gray": "\033[90m",
+    "bright_red": "\033[91m",
+    "bright_green": "\033[92m",
+    "bright_yellow": "\033[93m",
+    "bright_blue": "\033[94m",
+    "bright_magenta": "\033[95m",
+    "bright_cyan": "\033[96m",
+    "bright_white": "\033[97m"
+}
+
+def colorize(text: str, color: str | None) -> str:
+
+    if color in colors:
+        return f"\033[38;5;{colors[color]}{text}\033[0m"
+    return text
+
 class Simulator:
 
     def __init__(self, map: Map, k: int) -> None:
@@ -56,7 +81,7 @@ class Simulator:
 
             if drone.is_restricted:
                 drone.is_restricted = False
-                moved_drones.append((drone, f"D{drone.id}-{next_zone.name}"))
+                moved_drones.append((drone, f"D{drone.id}-{colorize(next_zone.name, next_zone.color)}"))
                 continue
 
             if next_zone.zone == ZoneType.RESTRICTED:
@@ -82,7 +107,7 @@ class Simulator:
                 self.zones_occupation[current_zone.name] -= 1
                 self.zones_occupation[next_zone.name] += 1
                 self.links_occupation[edge] += 1
-                moved_drones.append((drone, f"D{drone.id}-{next_zone.name}"))
+                moved_drones.append((drone, f"D{drone.id}-{colorize(next_zone.name, next_zone.color)}"))
 
         for drone, _ in moved_drones:
             if drone.is_restricted:
@@ -121,7 +146,7 @@ class Simulator:
                 if not drone.arrived:
                     drone.state = DroneState.WAITING
                 if drone.is_restricted:
-                    edge = tuple(sorted(drone.current_connection))
+                    edge = tuple(sorted((drone.current_zone.name, drone.next_zone.name)))
                     self.links_occupation[edge] += 1
 
             current_active_drones = self.active_drones.copy()
