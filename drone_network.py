@@ -34,9 +34,7 @@ class DroneNetwork:
         return self.nodes[zone].zone.movement_cost()
 
     def path_finding(self, start: str, end: str,
-                     blocked_zones: Optional[set[str]] = None) -> list[Zone]:
-        if blocked_zones is None:
-            blocked_zones = set()
+                     penalties: dict[str, float] = None) -> list[Zone]:
 
         distances: dict[str, float] = {node: inf for node in self.nodes}
         previous: dict[str, str | None] = {node: None for node in self.nodes}
@@ -53,11 +51,12 @@ class DroneNetwork:
 
             for neighbor, conn in self.adjacency[current]:
 
-                if (self.nodes[neighbor].zone == ZoneType.BLOCKED
-                        or neighbor in blocked_zones):
+                if self.nodes[neighbor].zone == ZoneType.BLOCKED:
                     continue
 
                 new_cost = distance + self.movement_cost(neighbor)
+                if penalties and neighbor in penalties:
+                    new_cost += penalties[neighbor]
 
                 if new_cost < distances[neighbor]:
                     distances[neighbor] = new_cost
@@ -88,18 +87,18 @@ class DroneNetwork:
         candidate_short_paths: list[list[Zone]] = [short_path]
         seen: set[tuple[str, ...]] = {tuple(zone.name for zone in short_path)}
 
-        zones: list[Zone] = short_path[1:-1]
+        penalties: dict[str, float] = {}
 
-        for zone in zones:
-            if len(candidate_short_paths) == k:
-                break
+        for _ in range(k - 1):
+
+            for path in candidate_short_paths:
+                for zone in path[1:-1]:
+                    penalties[zone.name] = penalties.get(zone.name, 0) + 10 # penalty
 
             try:
-                new_path = self.path_finding(start,
-                                             end,
-                                             blocked_zones={zone.name})
+                new_path = self.path_finding(start, end, penalties)
             except ValueError:
-                continue
+                break
 
             key = tuple(zone.name for zone in new_path)
             if key not in seen:
