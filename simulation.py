@@ -1,29 +1,8 @@
 from drone import Drone, DroneState
 from drone_network import DroneNetwork
 from map_parser import Map, Zone, ZoneType
+from colorize import colorize
 
-
-colors: dict[str, str] = {
-    "black": "\033[30m",
-    "red": "\033[31m",
-    "green": "\033[32m",
-    "yellow": "\033[93m",
-    "blue": "\033[34m",
-    "magenta": "\033[95m",
-    "cyan": "\033[36m",
-    "gray": "\033[90m",
-    "orange": "\033[91m",
-    "lime": "\033[92m",
-    "brown": "\033[33m",
-    "purple": "\033[35m",
-    "gold": "\033[93m",
-}
-
-def colorize(text: str, color: str | None) -> str:
-
-    if color in colors:
-        return f"\033[38;5;{colors[color]}{text}\033[0m"
-    return text
 
 class Simulator:
 
@@ -44,6 +23,9 @@ class Simulator:
 
         self.paths: list[list[Zone]] = self.drone_network.k_shortest_paths(
             map.start_hub.name, map.end_hub.name, k)
+
+        if not self.paths:
+            raise ValueError("No path found")
 
         self.waiting_drones: list[Drone] = [
             Drone(i + 1, self.paths[i % len(self.paths)]
@@ -95,6 +77,7 @@ class Simulator:
                     moved_drones.append((
                         drone, f"D{drone.id}-"
                                f"{'-'.join(drone.current_connection)}"))
+                    continue
 
             if (self.zones_occupation[next_zone.name]
                     < next_zone.max_drones
@@ -151,9 +134,7 @@ class Simulator:
 
             for drone, msg in moves_drones:
                 moves.append(msg)
-
+            #print(self.zones_occupation)
             self.current_turn += 1
             if moves:
                 print(f"[T{self.current_turn}] {' '.join(moves)}")
-
-        print(f"\n{self.current_turn}")
