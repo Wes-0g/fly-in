@@ -11,7 +11,14 @@ def main() -> None:
         exit(1)
 
     parser: Parser = Parser(map=argv[1])
-    map = parser.parse()
+    try:
+        map = parser.parse()
+    except ValueError as e:
+        print(f"{e}")
+        exit(1)
+    except FileNotFoundError as e:
+        print(f"{e}")
+        exit(1)
 
     graph: DroneNetwork = DroneNetwork(map)
     # path = graph.path_finding(map.start_hub.name, map.end_hub.name)
@@ -25,9 +32,10 @@ def main() -> None:
             if zone == map.end_hub:
                 print()
 
-    sim = Simulator(map, 3)
+    sim = Simulator(map)
     sim.simulate()
     print(f"\n{len(paths)}")
+
 
 if __name__ == "__main__":
     main()
