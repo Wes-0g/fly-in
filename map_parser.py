@@ -1,133 +1,10 @@
-from enum import Enum
-from typing import Optional
 from sys import exit
-from math import inf
-
+from models import Map, Zone, Connection
 try:
-    from pydantic import (BaseModel, Field,
-                          model_validator,
-                          ValidationError,
-                          field_validator)
+    from pydantic import ValidationError
 except ModuleNotFoundError:
     print("Make install First to install dependencies")
     exit(1)
-
-
-class ZoneType(Enum):
-    RESTRICTED = "restricted"
-    NORMAL = "normal"
-    PRIORITY = "priority"
-    BLOCKED = "blocked"
-
-    def movement_cost(self) -> float:
-
-        cost: dict[ZoneType, float] = {ZoneType.NORMAL: 1,
-                                       ZoneType.PRIORITY: 1,
-                                       ZoneType.RESTRICTED: 2,
-                                       ZoneType.BLOCKED: inf}
-        return cost[self]
-
-
-class Zone(BaseModel):
-
-    name: str
-    x: int
-    y: int
-    zone: ZoneType = Field(default=ZoneType.NORMAL)
-    color: Optional[str] = Field(default=None)
-    max_drones: int = Field(default=1, ge=1)
-
-    @field_validator('name', mode='after')
-    @classmethod
-    def name_validator(cls, name: str) -> str:
-        if ' ' in name or '-' in name:
-            raise ValueError("name must not contain spaces or dashes")
-        return name
-
-
-class Connection(BaseModel):
-
-    zone_a: str
-    zone_b: str
-    max_link_capacity: int = Field(default=1, ge=1)
-
-    @model_validator(mode='after')
-    def zones_validator(self) -> "Connection":
-        if ' ' in self.zone_a or '-' in self.zone_a:
-            raise ValueError("Connection name must not "
-                             "contain spaces or dashes")
-        if ' ' in self.zone_b or '-' in self.zone_b:
-            raise ValueError("Connection name must not "
-                             "contain spaces or dashes")
-        return self
-
-
-class Map(BaseModel):
-    nb_drones: int = Field(ge=1)
-    start_hub: Zone
-    end_hub: Zone
-    zones: list[Zone]
-    connections: list[Connection]
-
-    @model_validator(mode='after')
-    def duplicates_zones_validator(self) -> "Map":
-        if self.start_hub.name == self.end_hub.name:
-            raise ValueError("start_hub and end_hub must be different")
-
-        seen: list[str] = []
-        duplicates: list[str] = []
-        for zone in self.zones:
-            if zone.name in seen:
-                duplicates.append(zone.name)
-            else:
-                seen.append(zone.name)
-
-        if self.start_hub.name in seen:
-            duplicates.append(self.start_hub.name)
-        if self.end_hub.name in seen:
-            duplicates.append(self.end_hub.name)
-        if duplicates:
-            raise ValueError(f"Duplicate zone names: {duplicates}")
-        return self
-
-    @model_validator(mode='after')
-    def valid_zone_connections(self) -> "Map":
-
-        zones: set[str] = {zone.name for zone in self.zones}
-        zones.add(self.start_hub.name)
-        zones.add(self.end_hub.name)
-        connection_a: list[str] = [conn.zone_a for conn in self.connections]
-        connection_b: list[str] = [conn.zone_b for conn in self.connections]
-        connections: set[str] = set(connection_a + connection_b)
-
-        if connections - zones:
-            raise ValueError(f"Invalid zone names in connections: "
-                             f"{connections - zones}")
-        return self
-
-    @model_validator(mode='after')
-    def duplicate_connections_validator(self) -> "Map":
-        connections: list[tuple[str, str]] = [
-            (conn.zone_a, conn.zone_b) for conn in self.connections
-        ]
-
-        seen_connections: set[tuple[str, str]] = set()
-        for conn_a, conn_b in connections:
-            reverse_conn: tuple[str, str] = (conn_b, conn_a)
-            if ((conn_a, conn_b) in seen_connections
-                    or reverse_conn in seen_connections):
-                raise ValueError(f"Duplicate connection: {conn_a}-{conn_b}")
-            seen_connections.add((conn_a, conn_b))
-
-        return self
-
-    @model_validator(mode='after')
-    def unique_start_end(self) -> "Map":
-
-        if (self.start_hub.x == self.end_hub.x
-                and self.start_hub.y == self.end_hub.y):
-            raise ValueError("start_hub and end_hub must be different")
-        return self
 
 
 class Parser:
@@ -148,11 +25,14 @@ class Parser:
                 ]
 
                 if not lines:
-                    raise ValueError(f"No valid lines found in {self.map}")
+                    raise ValueError(f"Error parsing file: '{self.map}'"
+                                     f"\ncause: no valid lines found"
+                                     f"\ngot: empty file")
 
                 if not lines[0].startswith('nb_drones:'):
-                    raise ValueError(f"First line must contain "
-                                     f"nb_drones\ngot: {lines[0]}")
+                    raise ValueError(f"Error parsing line: '{lines[0]}'"
+                                     f"\ncause: first line must start with 'nb_drones:'"
+                                     f"\ngot: '{lines[0]}'")
 
                 nb_drones_count: int = 0
                 start_hub_count: int = 0
@@ -167,15 +47,18 @@ class Parser:
                         nb_drones_count += 1
 
                     if nb_drones_count > 1:
-                        raise ValueError(f"Only one nb_drones is allowed"
-                                         f"\ngot: {nb_drones_count}")
+                        raise ValueError(f"Error parsing file: '{self.map}'"
+                                         f"\ncause: only one nb_drones is allowed"
+                                         f"\ngot: {nb_drones_count} nb_drones lines")
 
                     if start_hub_count > 1:
-                        raise ValueError(f"Only one start_hub is allowed"
-                                         f"\ngot: {start_hub_count}")
+                        raise ValueError(f"Error parsing file: '{self.map}'"
+                                         f"\ncause: only one start_hub is allowed"
+                                         f"\ngot: {start_hub_count} start_hub lines")
                     if end_hub_count > 1:
-                        raise ValueError(f"Only one end_hub is allowed"
-                                         f"\ngot: {end_hub_count}")
+                        raise ValueError(f"Error parsing file: '{self.map}'"
+                                         f"\ncause: only one end_hub is allowed"
+                                         f"\ngot: {end_hub_count} end_hub lines")
 
                 return lines
 
@@ -188,16 +71,16 @@ class Parser:
 
         data: list[str] = line.split()
         if len(data) != 2:
-            raise ValueError(f"Invalid nb_drones line format.\n"
-                             f"Expected: 'nb_drones: <positive_integer>'\n"
-                             f"Got: '{line}'")
+            raise ValueError(f"Error parsing line: '{line}'"
+                             f"\ncause: invalid nb_drones line format"
+                             f"\ngot: '{line}'")
         else:
             try:
                 nb_drones: int = int(data[1])
             except ValueError:
-                raise ValueError(f"Invalid nb_drones value.\n"
-                                 f"Expected a positive integer,"
-                                 f" got: '{data[1]}'")
+                raise ValueError(f"Error parsing line: '{line}'"
+                                 f"\ncause: invalid nb_drones value"
+                                 f"\ngot: '{data[1]}'")
 
         return nb_drones
 
@@ -215,22 +98,33 @@ class Parser:
             _, name, x, y = base.strip().split()
         except ValueError:
             raise ValueError(f"Error parsing line: '{line}'"
-                             f"\nexpected: 'name x y [metadata]'")
+                             f"\ncause: invalid zone format"
+                             f"\ngot: '{line}'")
 
         meta_dict: dict = {}
         if metadata:
             if metadata.count('=') > 3:
-                raise ValueError(f"Invalid metadata format: '{metadata}'")
+                raise ValueError(f"Error parsing line: '{line}'"
+                                 f"\ncause: too many metadata key-value pairs"
+                                 f"\ngot: '{metadata}'")
             for item in metadata.split():
                 if item.count('=') != 1:
-                    raise ValueError(f"Invalid metadata format: '{item}'")
+                    raise ValueError(f"Error parsing line: '{line}'"
+                                     f"\ncause: invalid metadata format"
+                                     f"\ngot: '{item}'")
                 key, value = item.split('=')
+                if key in meta_dict:
+                    raise ValueError(f"Error parsing line: '{line}"
+                                     f"\ncause: duplicate key '{key}'"
+                                     f"\ngot: '{line}'")
                 meta_dict[key.lower()] = value.lower()
 
         try:
             return Zone(name=name, x=int(x), y=int(y), **meta_dict)
         except (ValidationError, ValueError) as e:
-            raise ValueError(f"Error parsing line: {line}\n{e}")
+            raise ValueError(f"Error parsing line: '{line}'"
+                             f"\ncause: validation error"
+                             f"\ngot: {e}")
 
     @staticmethod
     def connection_parser(line: str) -> Connection:
@@ -249,15 +143,16 @@ class Parser:
             else:
                 connection_a, connection_b = connection.split('-')
         except ValueError:
-            raise ValueError(f"Error parsing line: '{line}"
-                             f"\nexpected: <connection_a-connection_b>"
-                             f" [metadata]'")
+            raise ValueError(f"Error parsing line: '{line}'"
+                             f"\ncause: invalid connection format"
+                             f"\ngot: '{line}'")
 
         metadata_dict: dict = {}
         if connection_metadata:
             if connection_metadata.count('=') != 1:
-                raise ValueError(f"Invalid metadata format:"
-                                 f" '{connection_metadata}'")
+                raise ValueError(f"Error parsing line: '{line}'"
+                                 f"\ncause: invalid metadata format"
+                                 f"\ngot: '{connection_metadata}'")
             key, value = connection_metadata.split('=')
             metadata_dict[key.lower()] = value.lower()
 
@@ -284,23 +179,21 @@ class Parser:
             elif line.startswith('connection:'):
                 connections.append(self.connection_parser(line))
             else:
-                raise ValueError(f"Invalid line: {line}")
+                raise ValueError(f"Error parsing line: '{line}'"
+                                 f"\ncause: unknown line type"
+                                 f"\ngot: '{line}'")
 
         if not start:
-            raise ValueError("start_hub line not found in input")
+            raise ValueError(f"Error parsing file: '{self.map}'"
+                             f"\ncause: start_hub line not found"
+                             f"\ngot: missing start_hub")
         if not end:
-            raise ValueError("end_hub line not found in input")
+            raise ValueError(f"Error parsing file: '{self.map}'"
+                             f"\ncause: end_hub line not found"
+                             f"\ngot: missing end_hub")
 
         return Map(nb_drones=nb_drones,
                    start_hub=start,
                    end_hub=end,
                    zones=zones,
                    connections=connections)
-
-
-# class ParsingError(Exception): # good concept to add in the future
-#
-#     def __init__(self, line_no: int, line: str, reason: str) -> None:
-#         self.line_no = line_no
-#         self.line = line
-#         self.reason = reason
