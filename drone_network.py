@@ -1,6 +1,5 @@
-from map_parser import Map, Zone, Connection, ZoneType
+from models import Map, Zone, Connection, ZoneType
 from heapq import heappop, heappush
-from typing import Optional
 from math import inf
 
 
@@ -28,7 +27,9 @@ class DroneNetwork:
         for neighbor, conn in self.adjacency[zone_a]:
             if neighbor == zone_b:
                 return conn
-        raise ValueError(f"No connection between {zone_a} and {zone_b}")
+        raise ValueError(f"Error finding connection"
+                         f"\ncause: no connection exists between zones"
+                         f"\ngot: {zone_a} -> {zone_b}")
 
     def movement_cost(self, zone: str) -> float:
         return self.nodes[zone].zone.movement_cost()
@@ -67,7 +68,9 @@ class DroneNetwork:
 
         path: list[Zone] = []
         if distances[end] == inf:
-            raise ValueError("No path found")
+            raise ValueError(f"Error finding path"
+                             f"\ncause: no valid path exists between zones"
+                             f"\ngot: {start} -> {end}")
 
         current2: str | None = end
         while current2 is not None:
@@ -93,7 +96,7 @@ class DroneNetwork:
 
             for path in candidate_short_paths:
                 for zone in path[1:-1]:
-                    penalties[zone.name] = penalties.get(zone.name, 0) + 10 # penalty
+                    penalties[zone.name] = penalties.get(zone.name, 0) + 0.5
 
             try:
                 new_path = self.path_finding(start, end, penalties)
