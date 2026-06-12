@@ -1,5 +1,5 @@
 from enum import Enum
-from map_parser import Zone
+from models import Zone
 from colorize import colorize
 
 
