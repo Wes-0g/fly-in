@@ -1,12 +1,12 @@
 from drone import Drone, DroneState
 from drone_network import DroneNetwork
-from map_parser import Map, Zone, ZoneType
+from models import Map, Zone, ZoneType
 from colorize import colorize
 
 
 class Simulator:
 
-    def __init__(self, map: Map, k: int) -> None:
+    def __init__(self, map: Map) -> None:
         self.map: Map = map
         self.drone_network: DroneNetwork = DroneNetwork(map)
         self.current_turn: int = 0
@@ -22,10 +22,12 @@ class Simulator:
         }
 
         self.paths: list[list[Zone]] = self.drone_network.k_shortest_paths(
-            map.start_hub.name, map.end_hub.name, k)
+            map.start_hub.name, map.end_hub.name, 2)
 
         if not self.paths:
-            raise ValueError("No path found")
+            raise ValueError(f"Error initializing simulation"
+                             f"\ncause: no valid paths found between start and end hubs"
+                             f"\ngot: start='{map.start_hub.name}', end='{map.end_hub.name}'")
 
         self.waiting_drones: list[Drone] = [
             Drone(i + 1, self.paths[i % len(self.paths)]
@@ -60,7 +62,9 @@ class Simulator:
 
             if drone.is_restricted:
                 drone.is_restricted = False
-                moved_drones.append((drone, f"D{drone.id}-{colorize(next_zone.name, next_zone.color)}"))
+                moved_drones.append((
+                    drone, f"D{drone.id}-"
+                           f"{colorize(next_zone.name, next_zone.color)}"))
                 continue
 
             if next_zone.zone == ZoneType.RESTRICTED:
@@ -87,7 +91,9 @@ class Simulator:
                 self.zones_occupation[current_zone.name] -= 1
                 self.zones_occupation[next_zone.name] += 1
                 self.links_occupation[edge] += 1
-                moved_drones.append((drone, f"D{drone.id}-{colorize(next_zone.name, next_zone.color)}"))
+                moved_drones.append((
+                    drone, f"D{drone.id}-"
+                           f"{colorize(next_zone.name, next_zone.color)}"))
 
         for drone, _ in moved_drones:
             if drone.is_restricted:
@@ -126,7 +132,8 @@ class Simulator:
                 if not drone.arrived:
                     drone.state = DroneState.WAITING
                 if drone.is_restricted:
-                    edge = tuple(sorted((drone.current_zone.name, drone.next_zone.name)))
+                    edge = tuple(sorted((
+                        drone.current_zone.name, drone.next_zone.name)))
                     self.links_occupation[edge] += 1
 
             current_active_drones = self.active_drones.copy()
@@ -134,7 +141,6 @@ class Simulator:
 
             for drone, msg in moves_drones:
                 moves.append(msg)
-            #print(self.zones_occupation)
             self.current_turn += 1
             if moves:
                 print(f"[T{self.current_turn}] {' '.join(moves)}")
