@@ -41,5 +41,5 @@ class Drone:
                          self.path[self.path_index + 1].color))
 
     def move(self) -> None:
-        if not self.arrived:
+        if not self.arrived and not self.is_restricted:
             self.path_index += 1
