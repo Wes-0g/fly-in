@@ -6,6 +6,8 @@ __pycache__/
 */.mypy_cache
 maps/
 maps/*
+config.txt
+test_parser.py
 
 # C extensions
 *.so
