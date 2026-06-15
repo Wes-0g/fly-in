@@ -99,7 +99,10 @@ class Simulator:
             drone.move()
 
             if drone.arrived:
-                self.active_drones.remove(drone)
+                if drone in self.active_drones:
+                    self.active_drones.remove(drone)
+                elif drone in self.waiting_drones:
+                    self.waiting_drones.remove(drone)
                 self.arrived_drones.append(drone)
                 drone.state = DroneState.ARRIVED
 
@@ -120,7 +123,7 @@ class Simulator:
 
             self.zones_occupation[self.map.end_hub.name] = 0
 
-            self.links_occupation: dict[tuple[str, str], int] = {
+            self.links_occupation = {
                 tuple(sorted((conn.zone_a, conn.zone_b))): 0
                 for conn in self.map.connections
             }
@@ -133,8 +136,7 @@ class Simulator:
                         drone.current_zone.name, drone.next_zone.name)))
                     self.links_occupation[edge] += 1
 
-            current_active_drones = self.active_drones.copy()
-            moves_drones = self.move_drones(current_active_drones)
+            moves_drones: list[tuple[Drone, str]] = self.move_drones(self.active_drones)
 
             for drone, msg in moves_drones:
                 moves.append(msg)
