@@ -5,8 +5,7 @@ from math import inf
 
 try:
     from pydantic import (BaseModel, Field,
-                          model_validator,
-                          field_validator)
+                          model_validator)
 except ModuleNotFoundError:
     print("Make install First to install dependencies")
     exit(1)
@@ -113,10 +112,11 @@ class Map(BaseModel):
         connection_b: list[str] = [conn.zone_b for conn in self.connections]
         connections: set[str] = set(connection_a + connection_b)
 
-        if connections - zones:
-            raise ValueError(f"Error parsing line: "
+        invalid = list(connections - zones)
+        if invalid:
+            raise ValueError(f"Error parsing line: connection: {invalid[0]}-{invalid[1]}"
                              f"\ncause: invalid zone names in connections"
-                             f"\ngot: {connections - zones}")
+                             f"\ngot: {invalid}")
         return self
 
     @model_validator(mode='after')
