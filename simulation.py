@@ -96,9 +96,6 @@ class Simulator:
                            f"{colorize(next_zone.name, next_zone.color)}"))
 
         for drone, _ in moved_drones:
-            if drone.is_restricted:
-                drone.state = DroneState.WAITING
-                continue
             drone.move()
 
             if drone.arrived:
