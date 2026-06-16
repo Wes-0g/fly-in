@@ -35,7 +35,7 @@ class DroneNetwork:
         return self.nodes[zone].zone.movement_cost()
 
     def path_finding(self, start: str, end: str,
-                     penalties: dict[str, float] = None) -> list[Zone]:
+                     penalties: dict[str, float] | None = None) -> list[Zone]:
 
         distances: dict[str, float] = {node: inf for node in self.nodes}
         previous: dict[str, str | None] = {node: None for node in self.nodes}
