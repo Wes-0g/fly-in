@@ -1,11 +1,11 @@
 run:
-	python3.10 fly-in.py config.txt
+	python3.10 fly-in.py $(map)
 
 install:
 	python3.10 -m pip install -r requirements.txt
 
 debug:
-	python3.10 -m pdb
+	python3.10 -m pdb fly-in.py $(map)
 
 clean:
 	rm -rf __pycache__ */__pycache__
@@ -19,8 +19,4 @@ lint:
 	 					 --disallow-untyped-defs \
 	 					 --check-untyped-defs
 
-lint-strict:
-	python3.10 -m mypy . --strict
-
-
-.PHONY: run install debug clean lint lint-strict
+.PHONY: run install debug clean lint
