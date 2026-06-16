@@ -66,7 +66,8 @@ class Connection(BaseModel):
         if self.zone_a == self.zone_b:
             raise ValueError(f"Error parsing line: '{self.line}'"
                              f"\ncause: zone_a and zone_b must be different"
-                             f"\ngot: zone_a='{self.zone_a}', zone_b='{self.zone_b}'")
+                             f"\ngot: zone_a='{self.zone_a}'"
+                             f", zone_b='{self.zone_b}'")
         return self
 
 
@@ -81,8 +82,10 @@ class Map(BaseModel):
     def duplicates_zones_validator(self) -> "Map":
         if self.start_hub.name == self.end_hub.name:
             raise ValueError(f"Error parsing line: {self.start_hub.line}"
-                             f"\ncause: start_hub and end_hub must be different"
-                             f"\ngot: start_hub='{self.start_hub.name}', end_hub='{self.end_hub.name}'")
+                             f"\ncause: start_hub and "
+                             f"end_hub must be different"
+                             f"\ngot: start_hub='{self.start_hub.name}',"
+                             f" end_hub='{self.end_hub.name}'")
 
         seen: list[str] = []
         duplicates: list[str] = []
@@ -114,7 +117,8 @@ class Map(BaseModel):
 
         invalid = list(connections - zones)
         if invalid:
-            raise ValueError(f"Error parsing line: connection: {invalid[0]}-{invalid[1]}"
+            raise ValueError(f"Error parsing line: "
+                             f"connection: {invalid[0]}-{invalid[1]}"
                              f"\ncause: invalid zone names in connections"
                              f"\ngot: {invalid}")
         return self
@@ -130,9 +134,22 @@ class Map(BaseModel):
             reverse_conn: tuple[str, str] = (conn_b, conn_a)
             if ((conn_a, conn_b) in seen_connections
                     or reverse_conn in seen_connections):
-                raise ValueError(f"Error parsing line: connection:{conn_a}-{conn_b}"
+                raise ValueError(f"Error parsing line: "
+                                 f"connection:{conn_a}-{conn_b}"
                                  f"\ncause: duplicate connection found"
                                  f"\ngot: {conn_a}-{conn_b}")
             seen_connections.add((conn_a, conn_b))
 
+        return self
+
+    @model_validator(mode='after')
+    def start_end_blocked(self) -> "Map":
+        if self.start_hub.zone == ZoneType.BLOCKED:
+            raise ValueError(f"Error parsing line: {self.start_hub.line}"
+                             f"\ncause: start_hub cannot be blocked"
+                             f"\ngot: {self.start_hub.zone}")
+        if self.end_hub.zone == ZoneType.BLOCKED:
+            raise ValueError(f"Error parsing line: {self.end_hub.line}"
+                             f"\ncause: end_hub cannot be blocked"
+                             f"\ngot: {self.end_hub.zone}")
         return self
