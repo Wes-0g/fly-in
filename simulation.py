@@ -25,9 +25,9 @@ class Simulator:
             map.start_hub.name, map.end_hub.name, 2)
 
         if not self.paths:
-            raise ValueError(f"Error initializing simulation"
-                             f"\ncause: no valid paths found between start and end hubs"
-                             f"\ngot: start='{map.start_hub.name}', end='{map.end_hub.name}'")
+            raise ValueError("Error initializing simulation"
+                             "\ncause: no valid paths found "
+                             "between start and end hubs")
 
         self.waiting_drones: list[Drone] = [
             Drone(i + 1, self.paths[i % len(self.paths)]
@@ -132,11 +132,14 @@ class Simulator:
                 if not drone.arrived:
                     drone.state = DroneState.WAITING
                 if drone.is_restricted:
+                    if drone.next_zone is None:
+                        continue
                     edge = tuple(sorted((
                         drone.current_zone.name, drone.next_zone.name)))
                     self.links_occupation[edge] += 1
 
-            moves_drones: list[tuple[Drone, str]] = self.move_drones(self.active_drones)
+            moves_drones: list[
+                tuple[Drone, str]] = self.move_drones(self.active_drones)
 
             for drone, msg in moves_drones:
                 moves.append(msg)
