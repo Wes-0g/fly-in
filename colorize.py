@@ -1,4 +1,15 @@
 def colorize(text: str, color: str | None) -> str:
+    """Apply ANSI color codes to text for terminal output.
+
+    Args:
+        text: The text to colorize.
+        color: The color name or hex code. If None, returns text unchanged.
+
+    Returns:
+        The colorized text with ANSI escape codes,
+         or original text if color is None.
+    """
+
     colors: dict[str, str] = {
         "black": "\033[30m",
         "red": "\033[31m",
