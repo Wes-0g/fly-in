@@ -5,8 +5,29 @@ from colorize import colorize
 
 
 class Simulator:
+    """Simulates drone movement across a network of zones.
+
+    Attributes:
+        map: The map containing zones and connections.
+        drone_network: Network manager for path finding.
+        current_turn: Current simulation turn number.
+        zones_occupation: Dictionary tracking drone count per zone.
+        links_occupation: Dictionary tracking drone count per connection.
+        paths: List of available paths for drones.
+        waiting_drones: List of drones waiting to start.
+        active_drones: List of drones currently moving.
+        arrived_drones: List of drones that have arrived.
+    """
 
     def __init__(self, map: Map) -> None:
+        """Initialize the Simulator with a map.
+
+        Args:
+            map: The map containing zones and connections for simulation.
+
+        Raises:
+            ValueError: If no valid paths exist between start and end hubs.
+        """
         self.map: Map = map
         self.drone_network: DroneNetwork = DroneNetwork(map)
         self.current_turn: int = 0
@@ -39,6 +60,14 @@ class Simulator:
 
     def move_drones(self, active_drones: list[Drone]) ->\
             list[tuple[Drone, str]]:
+        """Move drones according to their paths and zone/link constraints.
+
+        Args:
+            active_drones: List of drones currently in the network.
+
+        Returns:
+            List of tuples containing moved drones and their movement messages.
+        """
         moved_drones: list[tuple[Drone, str]] = []
 
         all_drones: list[Drone] = sorted(
@@ -117,6 +146,11 @@ class Simulator:
         return moved_drones
 
     def simulate(self) -> None:
+        """Run the simulation until all drones arrive at the destination.
+
+        Processes each turn by moving drones according to constraints
+        and printing movement information.
+        """
 
         while self.active_drones or self.waiting_drones:
             moves: list[str] = []
