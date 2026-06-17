@@ -4,8 +4,21 @@ from math import inf
 
 
 class DroneNetwork:
+    """Manages drone navigation and path finding across a network of zones.
+
+    Attributes:
+        map: The map containing zones and connections.
+        all_zones: List of all zones including start and end hubs.
+        nodes: Dictionary mapping zone names to Zone objects.
+        adjacency: Dictionary representing the graph adjacency list.
+    """
 
     def __init__(self, map: Map) -> None:
+        """Initialize the DroneNetwork with a map.
+
+        Args:
+            map: The map containing zones and connections to navigate.
+        """
 
         self.map: Map = map
         self.all_zones: list[Zone] = [self.map.start_hub,
@@ -23,7 +36,22 @@ class DroneNetwork:
             self.adjacency[conn.zone_a].append((conn.zone_b, conn))
             self.adjacency[conn.zone_b].append((conn.zone_a, conn))
 
+        # print(self.adjacency)
+        # print()
+
     def get_connection(self, zone_a: str, zone_b: str) -> Connection:
+        """Get the connection between two zones.
+
+        Args:
+            zone_a: Name of the first zone.
+            zone_b: Name of the second zone.
+
+        Returns:
+            The Connection object between the two zones.
+
+        Raises:
+            ValueError: If no connection exists between the zones.
+        """
         for neighbor, conn in self.adjacency[zone_a]:
             if neighbor == zone_b:
                 return conn
@@ -32,10 +60,31 @@ class DroneNetwork:
                          f"\ngot: {zone_a} -> {zone_b}")
 
     def movement_cost(self, zone: str) -> float:
+        """Calculate the movement cost for a zone.
+
+        Args:
+            zone: Name of the zone.
+
+        Returns:
+            The movement cost of the zone.
+        """
         return self.nodes[zone].zone.movement_cost()
 
     def path_finding(self, start: str, end: str,
                      penalties: dict[str, float] | None = None) -> list[Zone]:
+        """Find the shortest path between two zones using Dijkstra's algorithm.
+
+        Args:
+            start: Name of the starting zone.
+            end: Name of the destination zone.
+            penalties: Optional dictionary of zone names to penalty costs.
+
+        Returns:
+            List of Zone objects representing the path from start to end.
+
+        Raises:
+            ValueError: If no valid path exists between the zones.
+        """
 
         distances: dict[str, float] = {node: inf for node in self.nodes}
         previous: dict[str, str | None] = {node: None for node in self.nodes}
@@ -50,7 +99,7 @@ class DroneNetwork:
             if current == end:
                 break
 
-            for neighbor, conn in self.adjacency[current]:
+            for neighbor, _ in self.adjacency[current]:
 
                 if self.nodes[neighbor].zone == ZoneType.BLOCKED:
                     continue
@@ -81,6 +130,20 @@ class DroneNetwork:
 
     def k_shortest_paths(self, start: str, end: str, k: int)\
             -> list[list[Zone]]:
+        """Find k shortest paths between two zones.
+
+        Uses a penalty-based approach to find alternative paths by
+        incrementally penalizing zones used in previous paths.
+
+        Args:
+            start: Name of the starting zone.
+            end: Name of the destination zone.
+            k: Number of alternative paths to find.
+
+        Returns:
+            List of paths, where each path is a list of Zone objects.
+            Returns empty list if no path exists.
+        """
 
         try:
             short_path: list[Zone] = self.path_finding(start, end)
