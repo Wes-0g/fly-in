@@ -4,6 +4,13 @@ from simulation import Simulator
 
 
 def main() -> None:
+    """Main entry point for the drone simulation program.
+
+    Parses command line arguments, loads the map file, initializes
+    the simulator, and runs the simulation.
+
+    Exits with code 1 if arguments are invalid or map parsing fails.
+    """
 
     if len(argv) != 2:
         print("Usage: python3 map_parser.py <map_file>")
