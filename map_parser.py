@@ -8,11 +8,33 @@ except ModuleNotFoundError:
 
 
 class Parser:
+    """Parses map files to create Map objects for drone simulation.
+
+    Attributes:
+        map: Path to the map file to parse.
+    """
 
     def __init__(self, map: str) -> None:
+        """Initialize the Parser with a map file path.
+
+        Args:
+            map: Path to the map file to parse.
+        """
         self.map: str = map
 
     def filter_lines(self) -> list[str]:
+        """Read and filter valid lines from the map file.
+
+        Removes comments, empty lines, and validates the file structure.
+        Ensures only one nb_drones, start_hub, and end_hub line exists.
+
+        Returns:
+            List of valid, non-empty, non-comment lines from the file.
+
+        Raises:
+            ValueError: If file is empty, first line is invalid, or
+                duplicate required lines are found.
+        """
 
         with open(self.map, 'r') as file:
             stripped_lines: list[str] = [
@@ -66,6 +88,17 @@ class Parser:
 
     @staticmethod
     def nb_drones_parser(line: str) -> int:
+        """Parse the nb_drones line to extract the number of drones.
+
+        Args:
+            line: The nb_drones line to parse.
+
+        Returns:
+            The number of drones as an integer.
+
+        Raises:
+            ValueError: If line format is invalid or value is not an integer.
+        """
 
         if '#' in line:
             line = line[:line.index('#')].strip()
@@ -87,6 +120,17 @@ class Parser:
 
     @staticmethod
     def zone_parser(line: str) -> Zone:
+        """Parse a zone line to create a Zone object.
+
+        Args:
+            line: The zone line to parse.
+
+        Returns:
+            A Zone object with parsed attributes.
+
+        Raises:
+            ValueError: If zone format, metadata, or coordinates are invalid.
+        """
 
         if line.count('[') == 1 and line.count(']') == 1:
             base, metadata = line.split('[')
@@ -141,6 +185,17 @@ class Parser:
 
     @staticmethod
     def connection_parser(line: str) -> Connection:
+        """Parse a connection line to create a Connection object.
+
+        Args:
+            line: The connection line to parse.
+
+        Returns:
+            A Connection object with parsed attributes.
+
+        Raises:
+            ValueError: If connection format or metadata is invalid.
+        """
 
         if line.count('[') == 1 and line.count(']') == 1:
             base, connection_metadata = line.split('[')
@@ -177,6 +232,18 @@ class Parser:
             raise ValueError(f"{e.errors()[0]['msg'].lstrip('Value error, ')}")
 
     def parse(self) -> Map:
+        """Parse the entire map file and create a Map object.
+
+        Reads all lines, parses nb_drones, zones, and connections,
+        and validates the complete map structure.
+
+        Returns:
+            A Map object containing all parsed data.
+
+        Raises:
+            ValueError: If required lines are missing or validation fails.
+            ValidationError: If pydantic validation fails.
+        """
         try:
             lines: list[str] = self.filter_lines()
 
