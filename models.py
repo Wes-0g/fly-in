@@ -12,12 +12,25 @@ except ModuleNotFoundError:
 
 
 class ZoneType(Enum):
+    """Enumeration of zone types with different movement costs.
+
+    Attributes:
+        RESTRICTED: Zone with restricted access (cost: 2).
+        NORMAL: Standard zone (cost: 1).
+        PRIORITY: Priority zone (cost: 1).
+        BLOCKED: Impassable zone (cost: infinity).
+    """
     RESTRICTED = "restricted"
     NORMAL = "normal"
     PRIORITY = "priority"
     BLOCKED = "blocked"
 
     def movement_cost(self) -> float:
+        """Get the movement cost for this zone type.
+
+        Returns:
+            The movement cost as a float. BLOCKED zones return infinity.
+        """
 
         cost: dict[ZoneType, float] = {ZoneType.NORMAL: 1,
                                        ZoneType.PRIORITY: 1,
@@ -27,6 +40,17 @@ class ZoneType(Enum):
 
 
 class Zone(BaseModel):
+    """Represents a zone in the drone network.
+
+    Attributes:
+        name: Unique identifier for the zone.
+        x: X coordinate of the zone.
+        y: Y coordinate of the zone.
+        zone: Type of the zone (default: NORMAL).
+        color: Display color for the zone (optional).
+        max_drones: Maximum number of drones allowed in the zone.
+        line: Original line from the map file for error reporting.
+    """
 
     name: str
     x: int
@@ -38,6 +62,14 @@ class Zone(BaseModel):
 
     @model_validator(mode='after')
     def name_validator(self) -> "Zone":
+        """Validate that zone name contains no spaces or dashes.
+
+        Returns:
+            The validated Zone object.
+
+        Raises:
+            ValueError: If the name contains spaces or dashes.
+        """
         if ' ' in self.name or '-' in self.name:
             raise ValueError(f"Error parsing line: '{self.line}'"
                              f"\ncause: spaces or dashes are in zone name"
@@ -46,6 +78,14 @@ class Zone(BaseModel):
 
 
 class Connection(BaseModel):
+    """Represents a connection between two zones.
+
+    Attributes:
+        zone_a: Name of the first zone.
+        zone_b: Name of the second zone.
+        max_link_capacity: Maximum drones allowed on this connection.
+        line: Original line from the map file for error reporting.
+    """
 
     zone_a: str
     zone_b: str
@@ -54,6 +94,14 @@ class Connection(BaseModel):
 
     @model_validator(mode='after')
     def zones_validator(self) -> "Connection":
+        """Validate that zone names are valid and different.
+
+        Returns:
+            The validated Connection object.
+
+        Raises:
+            ValueError: If zone names contain spaces/dashes or are identical.
+        """
         if ' ' in self.zone_a or '-' in self.zone_a:
             raise ValueError(f"Error parsing line: '{self.line}'"
                              f"\ncause: spaces or dashes in zone name"
@@ -72,6 +120,15 @@ class Connection(BaseModel):
 
 
 class Map(BaseModel):
+    """Represents the complete map for drone simulation.
+
+    Attributes:
+        nb_drones: Number of drones to simulate.
+        start_hub: Starting zone for all drones.
+        end_hub: Destination zone for all drones.
+        zones: List of intermediate zones.
+        connections: List of connections between zones.
+    """
     nb_drones: int = Field(ge=1)
     start_hub: Zone
     end_hub: Zone
@@ -80,6 +137,14 @@ class Map(BaseModel):
 
     @model_validator(mode='after')
     def duplicates_zones_validator(self) -> "Map":
+        """Validate that all zone names are unique.
+
+        Returns:
+            The validated Map object.
+
+        Raises:
+            ValueError: If duplicate zone names are found.
+        """
         if self.start_hub.name == self.end_hub.name:
             raise ValueError(f"Error parsing line: {self.start_hub.line}"
                              f"\ncause: start_hub and "
@@ -107,6 +172,14 @@ class Map(BaseModel):
 
     @model_validator(mode='after')
     def valid_zone_connections(self) -> "Map":
+        """Validate that all connections reference existing zones.
+
+        Returns:
+            The validated Map object.
+
+        Raises:
+            ValueError: If connections reference non-existent zones.
+        """
 
         zones: set[str] = {zone.name for zone in self.zones}
         zones.add(self.start_hub.name)
@@ -125,6 +198,15 @@ class Map(BaseModel):
 
     @model_validator(mode='after')
     def duplicate_connections_validator(self) -> "Map":
+        """Validate that there are no duplicate connections.
+
+        Returns:
+            The validated Map object.
+
+        Raises:
+            ValueError: If duplicate connections
+            (in either direction) are found.
+        """
         connections: list[tuple[str, str]] = [
             (conn.zone_a, conn.zone_b) for conn in self.connections
         ]
@@ -144,6 +226,14 @@ class Map(BaseModel):
 
     @model_validator(mode='after')
     def start_end_blocked(self) -> "Map":
+        """Validate that start and end hubs are not blocked.
+
+        Returns:
+            The validated Map object.
+
+        Raises:
+            ValueError: If start_hub or end_hub is BLOCKED.
+        """
         if self.start_hub.zone == ZoneType.BLOCKED:
             raise ValueError(f"Error parsing line: {self.start_hub.line}"
                              f"\ncause: start_hub cannot be blocked"
