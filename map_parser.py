@@ -253,18 +253,33 @@ class Parser:
             end = None
             zones: list[Zone] = []
             connections: list[Connection] = []
+            known_zones: set[str] = set()
+
             for line in lines[1:]:
                 if '#' in line:
                     line = line[:line.index('#')].strip()
 
                 if line.startswith('start_hub:'):
                     start = self.zone_parser(line)
+                    known_zones.add(start.name)
+
                 elif line.startswith('end_hub:'):
                     end = self.zone_parser(line)
+                    known_zones.add(end.name)
+
                 elif line.startswith('hub:'):
-                    zones.append(self.zone_parser(line))
+                    zone = self.zone_parser(line)
+                    zones.append(zone)
+                    known_zones.add(zone.name)
+
                 elif line.startswith('connection:'):
-                    connections.append(self.connection_parser(line))
+                    conn = self.connection_parser(line)
+                    for name in (conn.zone_a, conn.zone_b):
+                        if name not in known_zones:
+                            raise ValueError(f"Error parsing line: '{line}'"
+                                             f"\ncause: unknown zone"
+                                             f"\ngot: '{name}'")
+                    connections.append(conn)
                 else:
                     raise ValueError(f"Error parsing line: '{line}'"
                                      f"\ncause: unknown line type"
