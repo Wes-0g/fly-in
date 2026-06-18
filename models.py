@@ -171,32 +171,6 @@ class Map(BaseModel):
         return self
 
     @model_validator(mode='after')
-    def valid_zone_connections(self) -> "Map":
-        """Validate that all connections reference existing zones.
-
-        Returns:
-            The validated Map object.
-
-        Raises:
-            ValueError: If connections reference non-existent zones.
-        """
-
-        zones: set[str] = {zone.name for zone in self.zones}
-        zones.add(self.start_hub.name)
-        zones.add(self.end_hub.name)
-        connection_a: list[str] = [conn.zone_a for conn in self.connections]
-        connection_b: list[str] = [conn.zone_b for conn in self.connections]
-        connections: set[str] = set(connection_a + connection_b)
-
-        invalid = list(connections - zones)
-        if invalid:
-            raise ValueError(f"Error parsing line: "
-                             f"connection: {invalid[0]}-{invalid[1]}"
-                             f"\ncause: invalid zone names in connections"
-                             f"\ngot: {invalid}")
-        return self
-
-    @model_validator(mode='after')
     def duplicate_connections_validator(self) -> "Map":
         """Validate that there are no duplicate connections.
 
