@@ -57,7 +57,7 @@ class Zone(BaseModel):
     y: int
     zone: ZoneType = Field(default=ZoneType.NORMAL)
     color: Optional[str] = Field(default=None)
-    max_drones: int = Field(default=1, ge=1)
+    max_drones: int = Field(default=1)
     line: str
 
     @model_validator(mode='after')
@@ -76,6 +76,23 @@ class Zone(BaseModel):
                              f"\ngot: '{self.name}'")
         return self
 
+    @model_validator(mode='after')
+    def max_drones_metadata_validator(self) -> "Zone":
+        """Validate that max_drones is at least 1.
+
+        Returns:
+            The validated Zone object.
+
+        Raises:
+            ValueError: If max_drones is less than 1.
+        """
+
+        if self.max_drones < 1:
+            raise ValueError(f"Error parsing line: '{self.line}'"
+                             f"\ncause: max_drones must be at least 1"
+                             f"\ngot: {self.max_drones}")
+        return self
+
 
 class Connection(BaseModel):
     """Represents a connection between two zones.
@@ -89,7 +106,7 @@ class Connection(BaseModel):
 
     zone_a: str
     zone_b: str
-    max_link_capacity: int = Field(default=1, ge=1)
+    max_link_capacity: int = Field(default=1)
     line: str
 
     @model_validator(mode='after')
@@ -116,6 +133,22 @@ class Connection(BaseModel):
                              f"\ncause: zone_a and zone_b must be different"
                              f"\ngot: zone_a='{self.zone_a}'"
                              f", zone_b='{self.zone_b}'")
+        return self
+
+    @model_validator(mode='after')
+    def max_link_capacity_metadata_validator(self) -> "Connection":
+        """Validate that max_link_capacity is at least 1.
+
+        Returns:
+            The validated Connection object.
+
+        Raises:
+            ValueError: If max_link_capacity is less than 1.
+        """
+        if self.max_link_capacity < 1:
+            raise ValueError(f"Error parsing line: '{self.line}'"
+                             f"\ncause: max_link_capacity must be at least 1"
+                             f"\ngot: {self.max_link_capacity}")
         return self
 
 
