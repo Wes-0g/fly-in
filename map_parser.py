@@ -115,7 +115,10 @@ class Parser:
                 raise ValueError(f"Error parsing line: '{line}'"
                                  f"\ncause: invalid nb_drones value"
                                  f"\ngot: '{data[1]}'")
-
+        if nb_drones < 1:
+            raise ValueError(f"Error parsing line: '{line}'"
+                             f"\ncause: nb_drones must be a positive integer"
+                             f"\ngot: '{nb_drones}'")
         return nb_drones
 
     @staticmethod
@@ -157,11 +160,22 @@ class Parser:
                     raise ValueError(f"Error parsing line: '{line}'"
                                      f"\ncause: invalid metadata format"
                                      f"\ngot: '{item}'")
+
                 key, value = item.split('=')
-                if key in meta_dict:
+                if key.lower() in meta_dict:
                     raise ValueError(f"Error parsing line: '{line}"
                                      f"\ncause: duplicate key '{key}'"
                                      f"\ngot: '{line}'")
+
+                if key.lower() not in ['zone', 'color', 'max_drones']:
+                    raise ValueError(f"Error parsing line: '{line}"
+                                     f"\ncause: invalid metadata key"
+                                     f"\ngot: '{key}'")
+                if not value:
+                    raise ValueError(f"Error parsing line: '{line}"
+                                     f"\ncause: invalid metadata value"
+                                     f"\ngot: '{value}'")
+
                 meta_dict[key.lower()] = value.lower()
 
         zones_type: list[str] = ['restricted', 'normal', 'priority', 'blocked']
@@ -204,6 +218,10 @@ class Parser:
             base = line
             connection_metadata = None
 
+        if len(base.split()) != 2:
+            raise ValueError(f"Error parsing line: '{line}'"
+                             f"\ncause: invalid connection format"
+                             f"\ngot: '{line}'")
         try:
             connection = base.split()[1]
             if connection.count('-') != 1:
@@ -222,6 +240,15 @@ class Parser:
                                  f"\ncause: invalid metadata format"
                                  f"\ngot: '{connection_metadata}'")
             key, value = connection_metadata.split('=')
+            if key.lower() not in ['max_link_capacity']:
+                raise ValueError(f"Error parsing line: '{line}'"
+                                 f"\ncause: invalid metadata key"
+                                 f"\ngot: '{key}'")
+            if not value:
+                raise ValueError(f"Error parsing line: '{line}'"
+                                 f"\ncause: invalid metadata value"
+                                 f"\ngot: '{value}'")
+
             metadata_dict[key.lower()] = value.lower()
         try:
             return Connection(zone_a=connection_a,
@@ -301,8 +328,8 @@ class Parser:
                        connections=connections)
 
         except ValidationError as e:
-            print(f"ERROR: {e.errors()[0]['msg'].lstrip('Value error, ')}")
+            print(f"{e.errors()[0]['msg'].lstrip('Value error, ')}")
             exit(1)
         except ValueError as e:
-            print(f"ERROR: {e}")
+            print(f"{e}")
             exit(1)
