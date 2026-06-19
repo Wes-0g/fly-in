@@ -24,8 +24,12 @@ def main() -> None:
         print(f"{e}")
         exit(1)
 
-    sim: Simulator = Simulator(map)
-    sim.simulate()
+    try:
+        sim: Simulator = Simulator(map)
+        sim.simulate()
+    except ValueError as e:
+        print(f"{e}")
+        exit(1)
 
 
 if __name__ == "__main__":
