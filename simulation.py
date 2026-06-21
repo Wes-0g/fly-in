@@ -29,6 +29,7 @@ class Simulator:
             ValueError: If no valid paths exist between start and end hubs.
         """
         self.map: Map = map
+        self.map.end_hub.max_drones = self.map.nb_drones
         self.drone_network: DroneNetwork = DroneNetwork(map)
         self.current_turn: int = 0
 
@@ -154,8 +155,6 @@ class Simulator:
 
         while self.active_drones or self.waiting_drones:
             moves: list[str] = []
-
-            self.zones_occupation[self.map.end_hub.name] = 0
 
             self.links_occupation = {
                 tuple(sorted((conn.zone_a, conn.zone_b))): 0
