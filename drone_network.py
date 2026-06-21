@@ -36,9 +36,6 @@ class DroneNetwork:
             self.adjacency[conn.zone_a].append((conn.zone_b, conn))
             self.adjacency[conn.zone_b].append((conn.zone_a, conn))
 
-        # print(self.adjacency)
-        # print()
-
     def get_connection(self, zone_a: str, zone_b: str) -> Connection:
         """Get the connection between two zones.
 
