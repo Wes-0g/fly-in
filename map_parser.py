@@ -162,21 +162,38 @@ class Parser:
                                      f"\ngot: '{item}'")
 
                 key, value = item.split('=')
-                if key.lower() in meta_dict:
+                value = value.strip().lower()
+                key = key.strip().lower()
+
+                if key in meta_dict:
                     raise ValueError(f"Error parsing line: '{line}"
                                      f"\ncause: duplicate key '{key}'"
                                      f"\ngot: '{line}'")
 
-                if key.lower() not in ['zone', 'color', 'max_drones']:
+                if key not in ['zone', 'color', 'max_drones']:
                     raise ValueError(f"Error parsing line: '{line}"
                                      f"\ncause: invalid metadata key"
                                      f"\ngot: '{key}'")
+                if key == "max_drones":
+                    try:
+                        _ = int(value)
+                    except ValueError:
+                        raise ValueError(f"Error parsing line: '{line}"
+                                         f"\ncause: invalid metadata value"
+                                         f"\ngot: '{value}'")
+
+                if key == "color":
+                    if not value.isalpha():
+                        raise ValueError(f"Error parsing line: '{line}"
+                                         f"\ncause: invalid metadata value"
+                                         f"\ngot: '{value}'")
+
                 if not value:
                     raise ValueError(f"Error parsing line: '{line}"
                                      f"\ncause: invalid metadata value"
                                      f"\ngot: '{value}'")
 
-                meta_dict[key.lower()] = value.lower()
+                meta_dict[key] = value
 
         zones_type: list[str] = ['restricted', 'normal', 'priority', 'blocked']
         if 'zone' in meta_dict:
@@ -244,6 +261,12 @@ class Parser:
                 raise ValueError(f"Error parsing line: '{line}'"
                                  f"\ncause: invalid metadata key"
                                  f"\ngot: '{key}'")
+            try:
+                _ = int(value)
+            except ValueError:
+                raise ValueError(f"Error parsing line: '{line}"
+                                 f"\ncause: invalid metadata value"
+                                 f"\ngot: '{value}'")
             if not value:
                 raise ValueError(f"Error parsing line: '{line}'"
                                  f"\ncause: invalid metadata value"
