@@ -135,19 +135,29 @@ class Parser:
             ValueError: If zone format, metadata, or coordinates are invalid.
         """
 
-        if line.count('[') == 1 and line.count(']') == 1:
-            base, metadata = line.split('[')
-            metadata = metadata.rstrip(']')
-        else:
-            base = line
-            metadata = None
+        parts = line.split()
 
-        try:
-            _, name, x, y = base.strip().split()
-        except ValueError:
+        if len(parts) < 4:
             raise ValueError(f"Error parsing line: '{line}'"
                              f"\ncause: invalid zone format"
                              f"\ngot: '{line}'")
+
+        _, name, x, y = parts[0], parts[1], parts[2], parts[3]
+        rest = parts[4:]
+
+        metadata: str | None = None
+        if rest:
+            meta_block = ' '.join(rest)
+            if meta_block.count('[') != 1 or meta_block.count(']') != 1:
+                raise ValueError(f"Error parsing line: '{line}'"
+                                 f"\ncause: metadata must be a [...] block"
+                                 f"\ngot: '{meta_block}'")
+            if not meta_block.startswith('[') or not meta_block.endswith(']'):
+                raise ValueError(f"Error parsing line: '{line}'"
+                                 f"\ncause: invalid zone format"
+                                 f"\ngot: '{meta_block}'")
+
+            metadata = meta_block[1:-1]
 
         meta_dict: dict = {}
         if metadata:
@@ -228,27 +238,36 @@ class Parser:
             ValueError: If connection format or metadata is invalid.
         """
 
-        if line.count('[') == 1 and line.count(']') == 1:
-            base, connection_metadata = line.split('[')
-            connection_metadata = connection_metadata.rstrip(']')
-        else:
-            base = line
-            connection_metadata = None
+        parts = line.split()
 
-        if len(base.split()) != 2:
+        if len(parts) < 2:
             raise ValueError(f"Error parsing line: '{line}'"
                              f"\ncause: invalid connection format"
                              f"\ngot: '{line}'")
-        try:
-            connection = base.split()[1]
-            if connection.count('-') != 1:
-                raise ValueError()
-            else:
-                connection_a, connection_b = connection.split('-')
-        except ValueError:
+        connection = parts[1]
+        rest = parts[2:]
+
+        connection_metadata: str | None = None
+        if rest:
+            meta_block = ' '.join(rest)
+            if meta_block.count('[') != 1 or meta_block.count(']') != 1:
+                raise ValueError(f"Error parsing line: '{line}'"
+                                 f"\ncause: metadata must be a [...] block"
+                                 f"\ngot: '{meta_block}'")
+
+            if not meta_block.startswith('[') or not meta_block.endswith(']'):
+                raise ValueError(f"Error parsing line: '{line}'"
+                                 f"\ncause: invalid connection format"
+                                 f"\ngot: '{meta_block}'")
+            connection_metadata = meta_block[1:-1]
+
+        if connection.count('-') != 1:
             raise ValueError(f"Error parsing line: '{line}'"
-                             f"\ncause: invalid connection format"
-                             f"\ngot: '{line}'")
+                             f"\ncause: invalid connection format, "
+                             f"expected 'zoneA-zoneB'"
+                             f"\ngot: '{connection}'")
+
+        connection_a, connection_b = connection.split('-')
 
         metadata_dict: dict = {}
         if connection_metadata:
