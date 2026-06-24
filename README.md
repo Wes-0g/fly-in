@@ -8,15 +8,18 @@
 
 ### Goal
 
-The goal is to design a system that efficiently routes all drones from a `start_hub` to an `end_hub` in the fewest possible simulation turns, while handling zone capacities, link capacities, zone types (normal, restricted, priority, blocked), and multi-turn movement mechanics for restricted zones.
+The goal is to design a system that efficiently routes all drones from a `start_hub` to an `end_hub` in the fewest possible simulation turns, while handling zone capacities, link capacities, zone types (`normal`, `restricted`, `priority`, `blocked`), and multi-turn movement mechanics for restricted zones.
 
 ### Overview
 
-The project consists of a map file parser with full validation, a graph engine built from scratch (no external graph libraries), a Dijkstra-based pathfinding algorithm with k-shortest path discovery, a turn-based simulation engine with capacity enforcement, and a colored terminal output system for visual feedback.
+The project consists of:
+- A map file parser with full validation and clear error reporting
+- A graph engine built from scratch (no external graph libraries)
+- A Dijkstra-based pathfinding algorithm with k-shortest path discovery
+- A turn-based simulation engine with capacity enforcement
+- A colored terminal output system for visual feedback
 
 ## Instructions
-
-### Compilation
 
 ### Installation
 
@@ -52,6 +55,40 @@ make lint
 
 ```bash
 make clean
+```
+
+### Example
+
+**Input map:**
+
+```
+nb_drones: 5
+
+start_hub: hub 0 0 [color=green]
+end_hub: goal 10 10 [color=yellow]
+hub: roof1 3 4 [zone=restricted color=red]
+hub: roof2 6 2 [zone=normal color=blue]
+hub: corridorA 4 3 [zone=priority color=green max_drones=2]
+hub: tunnelB 7 4 [zone=normal color=red]
+hub: obstacleX 5 5 [zone=blocked color=gray]
+
+connection: hub-roof1
+connection: hub-corridorA
+connection: roof1-roof2
+connection: roof2-goal
+connection: corridorA-tunnelB [max_link_capacity=2]
+connection: tunnelB-goal
+```
+
+**Output:**
+
+```
+[T1] D1-corridorA D2-hub-roof1
+[T2] D1-tunnelB D2-roof1 D3-corridorA
+[T3] D1-goal D2-roof2 D3-tunnelB D4-hub-roof1 D5-corridorA
+[T4] D2-goal D3-goal D4-roof1 D5-tunnelB
+[T5] D4-roof2 D5-goal
+[T6] D4-goal
 ```
 
 
@@ -110,7 +147,6 @@ Terminal output uses raw ANSI escape codes — no external color libraries. Each
 - Zone names are colorized with their map-defined color (e.g., `red`, `green`, `blue`)
 - Drone identifiers (`D1`, `D2`) remain plain white for readability
 - Restricted transit connections show both zone names colorized independently: `D1-zoneA-zoneB`
-- Unknown color names fall back to a hash-based 256-color ANSI code for consistency
 - Turn numbers are prefixed in brackets: `[T1]`
 
 This makes it immediately clear which zones drones are moving through, which paths are being used simultaneously, and where bottlenecks occur.
@@ -137,4 +173,13 @@ This makes it immediately clear which zones drones are moving through, which pat
 
 ### Documentation and References
 
+- [Dijkstra's Algorithm - GeeksforGeeks](https://www.geeksforgeeks.org/dsa/dijkstras-shortest-path-algorithm-greedy-algo-7/)
+- [Graph Data Structure - GeeksforGeeks](https://www.geeksforgeeks.org/dsa/graph-data-structure/)
+- [heapq — Heap queue algorithm - Python docs](https://docs.python.org/3/library/heapq.html)
+
 ### AI Usage
+
+AI tools were used in this project specifically for:
+- **Understanding Dijkstra's algorithm:** Used AI to understand how Dijkstra works step by step — how the priority queue is used, how costs are updated, and how the shortest path is reconstructed from the visited nodes. The implementation was then written and understood independently.
+- **Docstrings and documentation:** AI was used to generate first drafts of docstrings for functions and classes following PEP 257 / Google style. Each docstring was reviewed, corrected, and adapted to match the actual implementation.
+- **Test design:** AI helped generate test cases for the map parser, covering edge cases from the subject requirements. All tests were reviewed and run manually to confirm they reflect actual parser behavior.
