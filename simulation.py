@@ -174,7 +174,7 @@ class Simulator:
             moves_drones: list[
                 tuple[Drone, str]] = self.move_drones(self.active_drones)
 
-            for drone, msg in moves_drones:
+            for _, msg in moves_drones:
                 moves.append(msg)
             self.current_turn += 1
             if moves:
