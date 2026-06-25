@@ -185,22 +185,18 @@ class Map(BaseModel):
                              f"\ngot: start_hub='{self.start_hub.name}',"
                              f" end_hub='{self.end_hub.name}'")
 
-        seen: list[str] = []
-        duplicates: list[str] = []
-        for zone in self.zones:
-            if zone.name in seen:
-                duplicates.append(zone.name)
-            else:
-                seen.append(zone.name)
+        seen: dict[str, str] = {}
 
-        if self.start_hub.name in seen:
-            duplicates.append(self.start_hub.name)
-        if self.end_hub.name in seen:
-            duplicates.append(self.end_hub.name)
-        if duplicates:
-            raise ValueError(f"Error parsing line: {duplicates[0]}"
-                             f"\ncause: duplicate zone names found"
-                             f"\ngot: {duplicates}")
+        all_zones = [self.start_hub, self.end_hub] + self.zones
+        for zone in all_zones:
+            if zone.name in seen:
+                raise ValueError(
+                    f"Error parsing line: '{zone.line}'"
+                    f"\ncause: duplicate zone name '{zone.name}'"
+                    f"\ngot: first declared at '{seen[zone.name]}'"
+                )
+            seen[zone.name] = zone.line
+
         return self
 
     @model_validator(mode='after')
