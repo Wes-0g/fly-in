@@ -87,9 +87,9 @@ class DroneNetwork:
         previous: dict[str, str | None] = {node: None for node in self.nodes}
 
         distances[start] = 0
-        priority_queue: list[tuple[float, int, str]] = [(0, 1, start)]
+        priority_queue: list[tuple[float, str]] = [(0, start)]
         while priority_queue:
-            distance, _, current = heappop(priority_queue)
+            distance, current = heappop(priority_queue)
 
             if distance > distances[current]:
                 continue
@@ -108,9 +108,7 @@ class DroneNetwork:
                 if new_cost < distances[neighbor]:
                     distances[neighbor] = new_cost
                     previous[neighbor] = current
-                    is_priority: int = 0 if (self.nodes[neighbor].zone.value
-                                             == "priority") else 1
-                    heappush(priority_queue, (new_cost, is_priority, neighbor))
+                    heappush(priority_queue, (new_cost, neighbor))
 
         path: list[Zone] = []
         if distances[end] == inf:
