@@ -17,7 +17,7 @@ class ZoneType(Enum):
     Attributes:
         RESTRICTED: Zone with restricted access (cost: 2).
         NORMAL: Standard zone (cost: 1).
-        PRIORITY: Priority zone (cost: 1).
+        PRIORITY: Priority zone (cost: 0.9).
         BLOCKED: Impassable zone (cost: infinity).
     """
     RESTRICTED = "restricted"
@@ -33,7 +33,7 @@ class ZoneType(Enum):
         """
 
         cost: dict[ZoneType, float] = {ZoneType.NORMAL: 1,
-                                       ZoneType.PRIORITY: 1,
+                                       ZoneType.PRIORITY: 0.9,
                                        ZoneType.RESTRICTED: 2,
                                        ZoneType.BLOCKED: inf}
         return cost[self]
