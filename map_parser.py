@@ -327,21 +327,22 @@ class Parser:
             for line in lines[1:]:
                 if '#' in line:
                     line = line[:line.index('#')].strip()
+                line_type = line.split()[0]
 
-                if line.startswith('start_hub:'):
+                if line_type == 'start_hub:':
                     start = self.zone_parser(line)
                     known_zones.add(start.name)
 
-                elif line.startswith('end_hub:'):
+                elif line_type == 'end_hub:':
                     end = self.zone_parser(line)
                     known_zones.add(end.name)
 
-                elif line.startswith('hub:'):
+                elif line_type == 'hub:':
                     zone = self.zone_parser(line)
                     zones.append(zone)
                     known_zones.add(zone.name)
 
-                elif line.startswith('connection:'):
+                elif line_type == 'connection:':
                     conn = self.connection_parser(line)
                     for name in (conn.zone_a, conn.zone_b):
                         if name not in known_zones:
@@ -351,7 +352,8 @@ class Parser:
                     connections.append(conn)
                 else:
                     raise ValueError(f"Error parsing line: '{line}'"
-                                     f"\ncause: unknown line type"
+                                     f"\ncause: unknown line type or "
+                                     f"invalid line format"
                                      f"\ngot: '{line}'")
 
             if not start:
