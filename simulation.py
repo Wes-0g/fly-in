@@ -44,7 +44,7 @@ class Simulator:
         }
 
         self.paths: list[list[Zone]] = self.drone_network.k_shortest_paths(
-            map.start_hub.name, map.end_hub.name, 2)
+            map.start_hub.name, map.end_hub.name)
 
         if not self.paths:
             raise ValueError("Error initializing simulation"
