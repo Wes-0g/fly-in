@@ -123,7 +123,7 @@ class DroneNetwork:
         path.reverse()
         return path
 
-    def k_shortest_paths(self, start: str, end: str, k: int)\
+    def k_shortest_paths(self, start: str, end: str)\
             -> list[list[Zone]]:
         """Find k shortest paths between two zones.
 
@@ -133,7 +133,6 @@ class DroneNetwork:
         Args:
             start: Name of the starting zone.
             end: Name of the destination zone.
-            k: Number of alternative paths to find.
 
         Returns:
             List of paths, where each path is a list of Zone objects.
@@ -150,7 +149,7 @@ class DroneNetwork:
 
         penalties: dict[str, float] = {}
 
-        for _ in range(k - 1):
+        for _ in range(10):
 
             for path in candidate_short_paths:
                 for zone in path[1:-1]:
@@ -165,5 +164,8 @@ class DroneNetwork:
             if key not in seen:
                 seen.add(key)
                 candidate_short_paths.append(new_path)
+
+            if len(candidate_short_paths) == 2:
+                break
 
         return candidate_short_paths
