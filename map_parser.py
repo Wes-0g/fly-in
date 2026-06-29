@@ -135,7 +135,7 @@ class Parser:
             ValueError: If zone format, metadata, or coordinates are invalid.
         """
 
-        parts = line.split()
+        parts: list[str] = line.split()
 
         if len(parts) < 4:
             raise ValueError(f"Error parsing line: '{line}'"
@@ -143,11 +143,11 @@ class Parser:
                              f"\ngot: '{line}'")
 
         _, name, x, y = parts[0], parts[1], parts[2], parts[3]
-        rest = parts[4:]
+        rest: list[str] = parts[4:]
 
         metadata: str | None = None
         if rest:
-            meta_block = ' '.join(rest)
+            meta_block: str = ' '.join(rest)
             if meta_block.count('[') != 1 or meta_block.count(']') != 1:
                 raise ValueError(f"Error parsing line: '{line}'"
                                  f"\ncause: metadata must be a [...] block"
@@ -238,18 +238,18 @@ class Parser:
             ValueError: If connection format or metadata is invalid.
         """
 
-        parts = line.split()
+        parts: list[str] = line.split()
 
         if len(parts) < 2:
             raise ValueError(f"Error parsing line: '{line}'"
                              f"\ncause: invalid connection format"
                              f"\ngot: '{line}'")
-        connection = parts[1]
-        rest = parts[2:]
+        connection: str = parts[1]
+        rest: list[str] = parts[2:]
 
         connection_metadata: str | None = None
         if rest:
-            meta_block = ' '.join(rest)
+            meta_block: str = ' '.join(rest)
             if meta_block.count('[') != 1 or meta_block.count(']') != 1:
                 raise ValueError(f"Error parsing line: '{line}'"
                                  f"\ncause: metadata must be a [...] block"
@@ -275,6 +275,7 @@ class Parser:
                 raise ValueError(f"Error parsing line: '{line}'"
                                  f"\ncause: invalid metadata format"
                                  f"\ngot: '{connection_metadata}'")
+
             key, value = connection_metadata.split('=')
             if key.lower() not in ['max_link_capacity']:
                 raise ValueError(f"Error parsing line: '{line}'"
@@ -318,8 +319,8 @@ class Parser:
 
             nb_drones: int = self.nb_drones_parser(lines[0])
 
-            start = None
-            end = None
+            start: Zone | None = None
+            end: Zone | None = None
             zones: list[Zone] = []
             connections: list[Connection] = []
             known_zones: set[str] = set()
@@ -327,7 +328,7 @@ class Parser:
             for line in lines[1:]:
                 if '#' in line:
                     line = line[:line.index('#')].strip()
-                line_type = line.split()[0]
+                line_type: str = line.split()[0]
 
                 if line_type == 'start_hub:':
                     start = self.zone_parser(line)
